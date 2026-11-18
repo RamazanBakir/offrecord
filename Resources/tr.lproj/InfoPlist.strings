@@ -1,0 +1,4 @@
+"NSAudioCaptureUsageDescription" = "Karşı tarafın sesini (sistem sesi) kaydetmek için.";
+"NSCalendarsFullAccessUsageDescription" = "Kaydı o anki takvim etkinliğinin adıyla ve katılımcılarıyla adlandırmak için.";
+"NSMicrophoneUsageDescription" = "Toplantı ve aramalardaki kendi sesini kaydetmek ve yazıya dökmek için.";
+"NSSpeechRecognitionUsageDescription" = "Kayıtları cihaz içinde yazıya dökmek için.";
