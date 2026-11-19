@@ -82,6 +82,15 @@ struct SettingsView: View {
             }
             Section(L("About")) {
                 LabeledContent(L("Version"), value: "\(AppInfo.version) (\(AppInfo.build))")
+                Toggle(L("Check for updates automatically"), isOn: Binding(
+                    get: { model.updates.isEnabled },
+                    set: { model.updates.isEnabled = $0 }
+                ))
+                HStack {
+                    Button(L("Check now")) { Task { await model.updates.check(manual: true) } }
+                        .disabled(model.updates.status == .checking)
+                    updateStatus
+                }
                 HStack {
                     Link(L("GitHub"), destination: AppInfo.repositoryURL)
                     Link(L("Release notes"), destination: AppInfo.releasesURL)
@@ -92,6 +101,17 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 520)
         .task { locales = await TranscriberModule.availableLocales() }
+    }
+
+    @ViewBuilder
+    private var updateStatus: some View {
+        switch model.updates.status {
+        case .idle: EmptyView()
+        case .checking: ProgressView().controlSize(.small)
+        case .upToDate: Text(L("You're up to date.")).foregroundStyle(.secondary)
+        case .available(let version): Text(L("Version %@ is available.", version)).foregroundStyle(.tint)
+        case .failed: Text(L("Couldn't reach GitHub. Try again later.")).foregroundStyle(.secondary)
+        }
     }
 
     private func chooseFolder() {

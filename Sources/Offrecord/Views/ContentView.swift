@@ -12,6 +12,9 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
         } detail: {
             detail
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if let release = model.updates.available { UpdateBanner(release: release) }
+                }
         }
         .onAppear { model.openWindowAction = openWindow }
         .confirmationDialog(
@@ -46,6 +49,36 @@ struct ContentView: View {
         } else {
             StartView()
         }
+    }
+}
+
+// MARK: - Update banner
+
+struct UpdateBanner: View {
+    @Environment(AppModel.self) private var model
+    let release: UpdateChecker.Release
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(L("Offrecord %@ is available", release.version)).font(.headline)
+                Text(L("You have version %@.", AppInfo.version)).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 12)
+            Button(L("Skip this version")) { model.updates.skipAvailable() }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+            Button(L("Later")) { model.updates.dismissForNow() }
+            Button(L("Get update")) { NSWorkspace.shared.open(release.pageURL) }
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
     }
 }
 

@@ -43,6 +43,7 @@ final class AppModel {
     }
 
     let detector = MeetingDetector()
+    let updates = UpdateChecker()
     private var lastDetectionPrompt = Date.distantPast
 
     var locale: Locale {
@@ -351,6 +352,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             let model = AppModel.shared
             model.startMeetingDetection()
             model.recoverUnfinished()
+            model.updates.start()
             quickControls = QuickControls(model: model)
             hotKey = GlobalHotKey { MainActor.assumeIsolated { model.toggleRecording() } }
         }

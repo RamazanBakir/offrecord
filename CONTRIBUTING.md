@@ -49,3 +49,14 @@ If the app crashed, attach the report from Console › Crash Reports (look for
 
 Add a table next to `Localization/Turkish.swift`, add a case to `AppLanguage`
 in `Localization/Localization.swift`, and run `./scripts/check-translations.sh`.
+
+## Releasing (maintainers)
+
+1. Add your changes under `## [Unreleased]` in `CHANGELOG.md` and commit them.
+2. Preview: `./scripts/release.sh X.Y.Z --dry-run`
+3. Publish: `./scripts/release.sh X.Y.Z`
+
+The script bumps the version in `Resources/Info.plist`, moves the changelog notes under
+the new version, builds and zips the app, tags `vX.Y.Z` and creates the GitHub release
+with the zip and its SHA-256. Running apps see the new version through the update
+banner within half a day.

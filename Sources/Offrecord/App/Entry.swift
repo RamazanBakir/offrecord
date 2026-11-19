@@ -11,6 +11,17 @@ enum Entry {
             print("Offrecord \(AppInfo.version) (\(AppInfo.build))")
             exit(0)
         }
+        if args.contains("--check-update") {
+            Task {
+                do {
+                    let latest = try await UpdateChecker.fetchLatest()
+                    let newer = UpdateChecker.isVersion(latest.version, newerThan: AppInfo.version)
+                    print("running \(AppInfo.version), latest \(latest.version): \(newer ? "update available" : "up to date") \(latest.pageURL)")
+                } catch { print("check failed:", error) }
+                exit(0)
+            }
+            RunLoop.main.run()
+        }
         if let index = args.firstIndex(of: "--selftest"), args.count > index + 1 {
             let url = URL(filePath: args[index + 1])
             let locale = Locale(identifier: args.count > index + 2 ? args[index + 2] : "tr_TR")

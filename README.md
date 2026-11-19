@@ -99,8 +99,23 @@ Fireflies, Fathom or Granola.
 
 ## Installation
 
-Offrecord is distributed as source: you build it on your own Mac in about a minute.
-No Apple Developer account is needed and nothing is downloaded during the build.
+There are two ways to install Offrecord. Both need macOS 26 on Apple silicon.
+
+### Option 1: Download the app
+
+1. Download `Offrecord-X.Y.Z.zip` from the [latest release](https://github.com/RamazanBakir/offrecord/releases/latest),
+   unzip it and move **Offrecord** to your Applications folder.
+2. Open it. Offrecord isn't notarized by Apple yet, so macOS blocks the first launch.
+   Open **System Settings › Privacy & Security**, scroll down and click **Open Anyway**.
+
+macOS treats every downloaded version as a new app, so after an update it may ask for
+Microphone and Screen & System Audio Recording permission again. Building from source
+avoids that.
+
+### Option 2: Build from source (recommended)
+
+You build the app on your own Mac in about a minute. No Apple Developer account is
+needed and nothing is downloaded during the build.
 
 ```sh
 git clone https://github.com/RamazanBakir/offrecord.git
@@ -115,7 +130,8 @@ The install script:
    (it never leaves your Mac and lets macOS remember permissions across updates),
 3. builds the app with Apple's toolchain, copies it to `~/Applications` and opens it.
 
-Because you build the app yourself, Gatekeeper shows no "unidentified developer" warning.
+Because you build the app yourself, Gatekeeper shows no "unidentified developer" warning,
+and permissions are kept across updates.
 
 | Task | Command |
 |---|---|
@@ -125,6 +141,12 @@ Because you build the app yourself, Gatekeeper shows no "unidentified developer"
 | Build only | `./scripts/build-app.sh` → `build/Offrecord.app` |
 
 Your recordings in `~/Documents/Offrecord` are never touched by uninstalling.
+
+### Updates
+
+Offrecord checks GitHub for a new release twice a day and shows a banner in the main
+window when one is available. The check is a single request to the GitHub API with no
+personal data; turn it off or check manually in Settings › About.
 
 The installed version is shown in Settings › About. See [CHANGELOG.md](CHANGELOG.md)
 for what changed in each release.
@@ -186,9 +208,11 @@ meta.json          title, date, duration, attendees
 ## Privacy
 
 - Audio, transcripts and notes are stored only in the folder you choose.
-- Transcription and note generation run on-device. The app makes no network
-  requests of its own; macOS may download Apple's speech model for a language
-  the first time you use it.
+- Transcription and note generation run on-device. Your audio, transcripts and
+  notes are never sent anywhere.
+- The only network request the app makes is the update check (the latest version
+  number from the GitHub API), which you can turn off in Settings › About. macOS may
+  download Apple's speech model for a language the first time you use it.
 - No analytics, no crash reporting, no account.
 
 ## Recording consent
@@ -210,7 +234,8 @@ To add an interface language, add a translation table next to
 ## FAQ
 
 **Does Offrecord send my recordings to the cloud?**
-No. Everything is recorded, transcribed and summarized on your Mac.
+No. Everything is recorded, transcribed and summarized on your Mac. The only request
+it makes is an optional update check against GitHub.
 
 **Does it join my Zoom, Google Meet or Teams call as a bot?**
 No. It records your Mac's microphone and system audio, so it works with any call
@@ -227,9 +252,10 @@ in Settings › Transcription language.
 **Why macOS 26 only?**
 The on-device transcription engine (`SpeechAnalyzer`) was introduced in macOS 26.
 
-**Why isn't there a downloadable app?**
-Offrecord is not notarized yet, so building from source is the simplest way to
-run it without security warnings. The install script makes this one command.
+**Why does macOS warn me when I open the downloaded app?**
+Offrecord isn't notarized by Apple yet (that needs a paid Apple Developer account).
+Click **Open Anyway** in System Settings › Privacy & Security once, or build from
+source with `./scripts/install.sh` to avoid the warning entirely.
 
 ## Development
 
@@ -240,7 +266,9 @@ swift build                                            # debug build
 build/Offrecord.app/Contents/MacOS/Offrecord --snapshot /tmp/shots   # render screens to PNG
 ```
 
-The app binary also has headless checks used during development:
+Releases are published with `./scripts/release.sh X.Y.Z` (see [CONTRIBUTING.md](CONTRIBUTING.md#releasing-maintainers)).
+
+The app binary also has headless checks used during development: `--check-update`,
 `--selftest <audio> [locale]` (transcription and notes), `--detector-test`
 (call detection timeline), `--enhance-test`, `--recovery-test` and
 `--showcase <dir> -storagePath <empty-dir>` (regenerates the screenshots in this README).

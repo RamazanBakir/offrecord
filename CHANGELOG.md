@@ -4,6 +4,17 @@ All notable changes to Offrecord are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Downloadable app: every release now ships `Offrecord-X.Y.Z.zip` with its SHA-256.
+- Update notifications: Offrecord checks GitHub for a new release twice a day and shows a
+  banner with the new version. Turn it off or check manually in Settings › About.
+- New app icon and logo.
+- Project website: https://ramazanbakir.github.io/offrecord/
+- `scripts/release.sh` to publish a release in one command.
+
 ## [0.1.0] - 2026-11-20
 
 First public release.

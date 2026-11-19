@@ -178,5 +178,15 @@ enum Translations {
         "GitHub": "GitHub",
         "Release notes": "Sürüm notları",
         "Report a problem": "Sorun bildir",
+        "Offrecord %@ is available": "Offrecord %@ çıktı",
+        "You have version %@.": "Kullandığınız sürüm: %@.",
+        "Skip this version": "Bu sürümü atla",
+        "Later": "Sonra",
+        "Get update": "Güncellemeyi al",
+        "Check for updates automatically": "Güncellemeleri otomatik kontrol et",
+        "Check now": "Şimdi kontrol et",
+        "You're up to date.": "En güncel sürümü kullanıyorsunuz.",
+        "Version %@ is available.": "%@ sürümü çıktı.",
+        "Couldn't reach GitHub. Try again later.": "GitHub'a ulaşılamadı. Daha sonra tekrar deneyin.",
     ]
 }

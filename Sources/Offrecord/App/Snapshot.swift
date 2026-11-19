@@ -37,7 +37,8 @@ enum Snapshot {
         render(RecordingPill().environment(model), name: "pill", size: NSSize(width: 580, height: 72), to: outputDirectory)
         model.recorder.errorMessage = nil
         render(SessionListPreview().environment(model), name: "sidebar", size: NSSize(width: 280, height: 400), to: outputDirectory)
-        render(SettingsView().environment(model), name: "settings", size: NSSize(width: 520, height: 420), to: outputDirectory)
+        render(SettingsView().environment(model), name: "settings", size: NSSize(width: 520, height: 1100), to: outputDirectory)
+        render(UpdateBanner(release: .init(version: "0.2.0", pageURL: AppInfo.releasesURL)).environment(model), name: "update-banner", size: NSSize(width: 820, height: 60), to: outputDirectory)
         print("snapshots written to \(outputDirectory.path)")
     }
 
