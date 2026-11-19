@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offrecord – Private, on-device meeting recorder and AI note taker for Mac</title>
+<meta name="description" content="Offrecord records your calls and meetings, transcribes them on your Mac and writes summaries, decisions and to-dos. Works with Zoom, Meet, Teams and any call app. Free, open source, no cloud, no bot.">
+<link rel="canonical" href="https://ramazanbakir.github.io/offrecord/">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101217" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Offrecord">
+<meta property="og:title" content="Offrecord – Private meeting notes, transcribed on your Mac">
+<meta property="og:description" content="Record, transcribe and summarize meetings on-device. Works with any call app. Free and open source for macOS.">
+<meta property="og:url" content="https://ramazanbakir.github.io/offrecord/">
+<meta property="og:image" content="https://ramazanbakir.github.io/offrecord/images/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Offrecord – Private meeting notes, transcribed on your Mac">
+<meta name="twitter:description" content="Record, transcribe and summarize meetings on-device. Free and open source for macOS.">
+<meta name="twitter:image" content="https://ramazanbakir.github.io/offrecord/images/social-preview.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23272f8f'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23ff6a5c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Offrecord",
+  "applicationCategory": "BusinessApplication",
+  "applicationSubCategory": "Meeting recorder and note taker",
+  "operatingSystem": "macOS 26 or later",
+  "softwareVersion": "0.1.0",
+  "description": "Private, on-device meeting recorder and AI note taker for macOS. Records calls and meetings, transcribes them locally and writes summaries, decisions and action items.",
+  "url": "https://ramazanbakir.github.io/offrecord/",
+  "downloadUrl": "https://github.com/RamazanBakir/offrecord",
+  "screenshot": "https://ramazanbakir.github.io/offrecord/images/detail.png",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Does Offrecord send my recordings to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "No. Recording, transcription and note generation all run on your Mac. The app makes no network requests of its own."}},
+    {"@type": "Question", "name": "Does it join my Zoom, Google Meet or Teams call as a bot?", "acceptedAnswer": {"@type": "Answer", "text": "No. It records your Mac's microphone and system audio, so it works with any call app and other participants see nothing new."}},
+    {"@type": "Question", "name": "Do I need Apple Intelligence?", "acceptedAnswer": {"@type": "Answer", "text": "No. With Apple Intelligence on and a supported language, Apple's on-device model writes the notes. Otherwise a local rule-based extractor is used."}},
+    {"@type": "Question", "name": "Which Macs are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Apple silicon Macs running macOS 26 (Tahoe) or later, because the SpeechAnalyzer transcription engine was introduced in macOS 26."}},
+    {"@type": "Question", "name": "Is Offrecord free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Offrecord is free and open source under the MIT license."}}
+  ]
+}
+</script>
+<style>
+/* Layout: centered 1080px column; hero split (copy | product shot); sections alternate text-led and image-led; transcript-style timestamps mark the real recording sequence. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #15171c;
+  --muted: #5b6170;
+  --line: #e1e4ea;
+  --accent: #272f8f;
+  --accent-soft: #e8eafb;
+  --rec: #e5483b;
+  --code-bg: #15171c;
+  --code-fg: #e9ebf0;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Inter", -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --shadow: 0 1px 2px rgba(20, 24, 40, .06), 0 18px 48px -12px rgba(20, 24, 60, .22);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101217; --surface: #171a21; --ink: #eceef3; --muted: #9ba1b0; --line: #262a34;
+    --accent: #a9b0ff; --accent-soft: #1f2340; --rec: #ff6a5c; --code-bg: #0b0c10; --code-fg: #e9ebf0;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 18px 48px -12px rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.08; text-wrap: balance; margin: 0; }
+h2 { font-size: clamp(28px, 4vw, 40px); }
+h3 { font-size: 19px; letter-spacing: -0.01em; }
+p { margin: 0; }
+.lede { color: var(--muted); font-size: 18px; max-width: 58ch; }
+.mono { font-family: var(--mono); }
+
+/* Top bar */
+.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid transparent; }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 19px; color: var(--ink); text-decoration: none; }
+.brand-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; }
+.brand-mark::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--rec); }
+.top nav { display: flex; align-items: center; gap: 22px; font-size: 14px; }
+.top nav a { color: var(--muted); text-decoration: none; }
+.top nav a:hover { color: var(--ink); }
+.top nav .gh { color: var(--ink); font-weight: 500; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+@media (max-width: 720px) { .top nav a:not(.gh) { display: none; } }
+
+/* Hero */
+.hero { padding: 56px 0 40px; display: grid; gap: 40px; }
+.status { display: inline-flex; align-items: center; gap: 10px; font: 500 13px var(--mono); color: var(--muted); padding: 6px 12px 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); width: fit-content; }
+.status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); box-shadow: 0 0 0 0 var(--rec); animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rec) 60%, transparent); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.hero h1 { font-size: clamp(40px, 7vw, 76px); max-width: 14ch; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-copy { display: grid; gap: 22px; justify-items: start; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 15px var(--body); padding: 12px 18px; border-radius: 10px; text-decoration: none; border: 1px solid transparent; cursor: pointer; }
+.btn-primary { background: var(--accent); color: var(--bg); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.meta-line { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.meta-line span::before { content: "✓ "; color: var(--accent); }
+.shot { border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); background: var(--surface); }
+
+/* Install box */
+.install { background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 4px; width: 100%; max-width: 560px; }
+.install-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 6px; font: 500 12px var(--mono); color: #8d93a3; }
+.install pre { margin: 0; padding: 4px 14px 14px; font: 400 14px/1.7 var(--mono); overflow-x: auto; }
+.install pre .p { color: #6f7586; user-select: none; }
+.copy { font: 500 12px var(--body); color: var(--code-fg); background: #262a34; border: 0; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+.copy:hover { background: #323745; }
+
+/* Sections */
+section { padding: 72px 0; }
+.section-head { display: grid; gap: 14px; margin-bottom: 36px; }
+.kicker { font: 500 13px var(--mono); color: var(--accent); letter-spacing: .02em; }
+
+/* Timeline */
+.timeline { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
+.tl { display: grid; grid-template-columns: 96px 1fr; gap: 24px; padding: 0 0 32px 24px; position: relative; }
+.tl::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--accent); }
+.tl:first-child::before { background: var(--rec); border-color: var(--rec); }
+.tl time { font: 500 14px var(--mono); color: var(--muted); padding-top: 2px; }
+.tl div { display: grid; gap: 6px; max-width: 60ch; }
+.tl p { color: var(--muted); }
+@media (max-width: 560px) { .tl { grid-template-columns: 1fr; gap: 4px; } }
+
+/* Features */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.feat { background: var(--surface); padding: 24px; display: grid; gap: 8px; align-content: start; }
+.feat .ic { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; margin-bottom: 6px; }
+.feat .ic svg { width: 18px; height: 18px; }
+.feat p { color: var(--muted); font-size: 15px; }
+
+/* Split showcase */
+.split { display: grid; gap: 36px; align-items: center; }
+@media (min-width: 900px) { .split { grid-template-columns: 5fr 7fr; } .split.rev { grid-template-columns: 7fr 5fr; } .split.rev .split-copy { order: 2; } }
+.split-copy { display: grid; gap: 16px; }
+.split-copy ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; color: var(--muted); }
+.split-copy li { padding-left: 22px; position: relative; }
+.split-copy li::before { content: ""; position: absolute; left: 2px; top: 10px; width: 8px; height: 8px; border-radius: 2px; background: var(--accent); }
+.pill-shot { margin-top: 28px; max-width: 640px; filter: drop-shadow(0 18px 30px rgba(20, 24, 60, .25)); }
+
+/* Comparison */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 15px; }
+th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+thead th { font: 600 13px var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+thead th:nth-child(2) { color: var(--accent); }
+td:nth-child(2) { font-weight: 600; }
+td:nth-child(3) { color: var(--muted); }
+
+/* Install section */
+.steps { display: grid; gap: 28px; }
+@media (min-width: 900px) { .steps { grid-template-columns: 1fr 1fr; align-items: start; } }
+.reqs { display: grid; gap: 10px; }
+.req { display: flex; gap: 12px; align-items: baseline; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.req b { font-weight: 600; min-width: 90px; }
+.req span { color: var(--muted); }
+
+/* FAQ */
+.faq { display: grid; gap: 0; border-top: 1px solid var(--line); }
+details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font: 400 22px/1 var(--mono); color: var(--muted); }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); margin-top: 10px; max-width: 70ch; }
+
+/* CTA + footer */
+.cta { text-align: center; display: grid; gap: 18px; justify-items: center; padding: 64px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.cta p { color: var(--muted); max-width: 52ch; }
+footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
+footer a { color: var(--muted); }
+
+@media (min-width: 960px) { .hero { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .status .dot { animation: none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><span class="brand-mark" aria-hidden="true"></span>Offrecord</a>
+    <nav aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/RamazanBakir/offrecord">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div class="hero-copy">
+      <span class="status"><span class="dot" aria-hidden="true"></span>v0.1.0 · free &amp; open source</span>
+      <h1>Meeting notes that stay <em>on your Mac</em>.</h1>
+      <p class="lede">Offrecord records your calls and meetings, transcribes them on-device and writes the summary, decisions and to-dos for you. It works with Zoom, Google Meet, Teams or any call app, and no bot ever joins your meeting.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#install">Install Offrecord</a>
+        <a class="btn btn-ghost" href="https://github.com/RamazanBakir/offrecord">View on GitHub</a>
+      </div>
+      <div class="meta-line"><span>No account</span><span>No cloud upload</span><span>MIT licensed</span><span>macOS 26 · Apple silicon</span></div>
+    </div>
+    <img class="shot" src="images/detail.png" width="1600" height="1013" alt="Offrecord meeting notes with summary, to-dos, decisions and open questions generated on-device from a recorded call">
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">How it works</span>
+        <h2>From call to notes in one meeting</h2>
+      </div>
+      <div class="timeline">
+        <div class="tl"><time>00:00:00</time><div><h3>Press record, or let Offrecord ask</h3><p>Start with ⌃⌥R from anywhere or the menu bar. When another app opens your microphone for a call, Offrecord offers to record, and it stops by itself when the call ends.</p></div></div>
+        <div class="tl"><time>00:00:02</time><div><h3>Both sides of the call, captured locally</h3><p>Your microphone gets Apple's voice processing; the other side comes from system audio. Audio is written to disk as you talk, so a crash never costs you the meeting.</p></div></div>
+        <div class="tl"><time>live</time><div><h3>Transcript as you speak</h3><p>Apple's on-device SpeechAnalyzer transcribes in real time, labelled <b>Me</b> and <b>Them</b>. Type notes or press ⌘B to bookmark a moment.</p></div></div>
+        <div class="tl"><time>+5 s</time><div><h3>Notes, ready when you stop</h3><p>A summary, decisions, action items and open questions, written by Apple Intelligence on-device or by local rules. Saved as Markdown next to your audio.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" style="padding-top: 24px;">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Features</span>
+        <h2>Everything a meeting assistant does, minus the server</h2>
+      </div>
+      <div class="grid">
+        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></span><h3>Any call app, or in person</h3><p>Zoom, Meet, Teams, Slack, WhatsApp, FaceTime. Optional screen recording too.</p></div>
+        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg></span><h3>Live transcription</h3><p>Speaker labels and every language Apple's speech recognition supports, Turkish included.</p></div>
+        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg></span><h3>Automatic notes</h3><p>Summary, key topics, decisions, action items and open questions after every meeting.</p></div>
+        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span><h3>One to-do list</h3><p>Action items from all your meetings in one place, with checkboxes.</p></div>
+        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg></span><h3>Crash-safe</h3><p>If the app or your Mac stops mid-meeting, the recording is recovered on next launch.</p></div>
+        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></span><h3>Plain files you own</h3><p>audio.m4a, notes.md and JSON in a folder you choose. Search everything inside the app.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="split">
+        <div class="split-copy">
+          <span class="kicker">While you record</span>
+          <h2>Stays out of the way of your call</h2>
+          <p class="lede">A small floating bar sits above every app with the timer, levels, a note field and the stop button. The full transcript is one click away.</p>
+          <ul>
+            <li>Pause and resume with ⇧⌘P</li>
+            <li>Mark key moments with ⌘B</li>
+            <li>Calendar-aware titles and attendees</li>
+          </ul>
+        </div>
+        <img class="shot" src="images/recording.png" width="1600" height="1013" loading="lazy" alt="Live on-device transcript with Me and Them speaker labels while recording a call">
+      </div>
+      <img class="pill-shot" src="images/pill.png" width="1600" height="217" loading="lazy" alt="Floating recording bar with timer, level meters, note field and stop button">
+    </div>
+  </section>
+
+  <section style="padding-top: 24px;">
+    <div class="wrap">
+      <div class="split rev">
+        <div class="split-copy">
+          <span class="kicker">After the meeting</span>
+          <h2>Every promise, in one list</h2>
+          <p class="lede">Offrecord pulls the action items out of each meeting and keeps them together, so "I'll send that by Thursday" doesn't get lost.</p>
+        </div>
+        <img class="shot" src="images/tasks.png" width="1600" height="1013" loading="lazy" alt="To-do list collecting action items from all recorded meetings">
+      </div>
+    </div>
+  </section>
+
+  <section id="compare">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Compare</span>
+        <h2>A private alternative to cloud note takers</h2>
+        <p class="lede">Otter.ai, Fireflies, Fathom and Granola are good products, but they process your conversations on their servers. Offrecord does the same job on your own Mac.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">Offrecord</th><th scope="col">Typical cloud note taker</th></tr></thead>
+          <tbody>
+            <tr><td>Where audio is processed</td><td>On your Mac</td><td>Vendor's servers</td></tr>
+            <tr><td>Bot joins your meeting</td><td>No</td><td>Often</td></tr>
+            <tr><td>Works with any call app or in person</td><td>Yes</td><td>Usually specific platforms</td></tr>
+            <tr><td>Account required</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Price</td><td>Free, open source</td><td>Monthly subscription</td></tr>
+            <tr><td>Your files</td><td>Audio, Markdown, JSON in your folder</td><td>Inside the vendor's app</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Install</span>
+        <h2>Build it on your Mac in about a minute</h2>
+        <p class="lede">Offrecord is distributed as source. One script checks your Mac, creates a local signing certificate so macOS remembers permissions, builds the app and puts it in your Applications folder. No Apple Developer account, no Gatekeeper warning.</p>
+      </div>
+      <div class="steps">
+        <div class="install">
+          <div class="install-head"><span>Terminal</span><button class="copy" type="button" data-copy="git clone https://github.com/RamazanBakir/offrecord.git&#10;cd offrecord&#10;./scripts/install.sh">Copy</button></div>
+<pre><span class="p">$ </span>git clone https://github.com/RamazanBakir/offrecord.git
+<span class="p">$ </span>cd offrecord
+<span class="p">$ </span>./scripts/install.sh</pre>
+        </div>
+        <div class="reqs">
+          <div class="req"><b>macOS</b><span>26 Tahoe or later</span></div>
+          <div class="req"><b>Mac</b><span>Apple silicon (M1 or later)</span></div>
+          <div class="req"><b>Tools</b><span>Xcode 26 or Command Line Tools: <code class="mono">xcode-select --install</code></span></div>
+          <div class="req"><b>Update</b><span><code class="mono">git pull &amp;&amp; ./scripts/install.sh</code></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">FAQ</span>
+        <h2>Questions</h2>
+      </div>
+      <div class="faq">
+        <details><summary>Does Offrecord send my recordings to the cloud?</summary><p>No. Recording, transcription and note generation all run on your Mac. The app makes no network requests of its own; macOS may download Apple's speech model for a language the first time you use it.</p></details>
+        <details><summary>Does it join my Zoom, Google Meet or Teams call as a bot?</summary><p>No. It records your Mac's microphone and system audio, so it works with any call app and other participants see nothing new.</p></details>
+        <details><summary>Do I need Apple Intelligence?</summary><p>No. With Apple Intelligence on and a supported language, Apple's on-device model writes the notes. Otherwise a local rule-based extractor is used.</p></details>
+        <details><summary>Which languages can it transcribe?</summary><p>Every language Apple's on-device speech recognition supports on your Mac. The interface is in English and Turkish.</p></details>
+        <details><summary>Why macOS 26 and Apple silicon only?</summary><p>The on-device transcription engine, SpeechAnalyzer, was introduced in macOS 26.</p></details>
+        <details><summary>Why isn't there a downloadable app?</summary><p>Offrecord isn't notarized yet, so building from source is the simplest way to run it without security warnings. The install script makes it one command.</p></details>
+        <details><summary>Is it legal to record calls?</summary><p>Laws differ between countries and states, and many require everyone's consent. Tell people when you record and follow the rules that apply to you.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top: 16px;">
+    <div class="wrap">
+      <div class="cta">
+        <h2>Your meetings, off the record.</h2>
+        <p>Free, open source and built on Apple's own frameworks. Star the repo to follow releases, or open an issue with ideas and bugs.</p>
+        <div class="actions" style="justify-content: center;">
+          <a class="btn btn-primary" href="https://github.com/RamazanBakir/offrecord">Star on GitHub</a>
+          <a class="btn btn-ghost" href="https://github.com/RamazanBakir/offrecord/releases">Release notes</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Offrecord · MIT License</span>
+    <nav aria-label="Footer">
+      <a href="https://github.com/RamazanBakir/offrecord">GitHub</a>
+      <a href="https://github.com/RamazanBakir/offrecord/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/RamazanBakir/offrecord/blob/main/CONTRIBUTING.md">Contributing</a>
+      <a href="https://github.com/RamazanBakir/offrecord/issues">Report a problem</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.copy').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var text = btn.getAttribute('data-copy');
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+    }).catch(function () {});
+  });
+});
+</script>
+</body>
+</html>

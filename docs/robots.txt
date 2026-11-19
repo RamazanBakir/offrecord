@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ramazanbakir.github.io/offrecord/sitemap.xml

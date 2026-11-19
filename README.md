@@ -15,6 +15,8 @@ summaries, decisions and to-dos. Your audio never leaves your Mac.
 ![No dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
+**[Website](https://ramazanbakir.github.io/offrecord/)** · [Install](#installation) · [Release notes](https://github.com/RamazanBakir/offrecord/releases) · [Changelog](CHANGELOG.md)
+
 <img src="docs/images/detail.png" alt="Offrecord meeting notes: summary, to-dos, decisions and open questions generated on-device from a recorded call" width="900">
 
 </div>
