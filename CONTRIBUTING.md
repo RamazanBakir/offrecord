@@ -6,7 +6,7 @@ it that way: only Apple system frameworks, no network services.
 ## Getting started
 
 ```sh
-git clone https://github.com/<your-account>/offrecord.git
+git clone https://github.com/RamazanBakir/offrecord.git
 cd offrecord
 ./scripts/install.sh        # builds, signs locally and installs to ~/Applications
 ```

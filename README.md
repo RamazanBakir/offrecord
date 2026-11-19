@@ -98,7 +98,7 @@ Offrecord is distributed as source: you build it on your own Mac in about a minu
 No Apple Developer account is needed and nothing is downloaded during the build.
 
 ```sh
-git clone https://github.com/<your-account>/offrecord.git
+git clone https://github.com/RamazanBakir/offrecord.git
 cd offrecord
 ./scripts/install.sh
 ```
