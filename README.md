@@ -1,8 +1,10 @@
 <div align="center">
 
+<img src="docs/images/icon.png" alt="Offrecord app icon" width="128" height="128">
+
 # Offrecord
 
-**Record, transcribe and summarize your meetings — privately, on your Mac.**
+**Your meetings, off the record.** Record, transcribe and summarize meetings privately, on your Mac.
 
 An open-source, local-first meeting recorder and AI note taker for macOS.
 Captures your calls and meetings, transcribes them on-device and turns them into

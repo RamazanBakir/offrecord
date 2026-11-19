@@ -6,8 +6,7 @@
 <title>Offrecord – Private, on-device meeting recorder and AI note taker for Mac</title>
 <meta name="description" content="Offrecord records your calls and meetings, transcribes them on your Mac and writes summaries, decisions and to-dos. Works with Zoom, Meet, Teams and any call app. Free, open source, no cloud, no bot.">
 <link rel="canonical" href="https://ramazanbakir.github.io/offrecord/">
-<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#101217" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="dark light">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Offrecord">
 <meta property="og:title" content="Offrecord – Private meeting notes, transcribed on your Mac">
@@ -20,10 +19,15 @@
 <meta name="twitter:title" content="Offrecord – Private meeting notes, transcribed on your Mac">
 <meta name="twitter:description" content="Record, transcribe and summarize meetings on-device. Free and open source for macOS.">
 <meta name="twitter:image" content="https://ramazanbakir.github.io/offrecord/images/social-preview.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23272f8f'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23ff6a5c'/%3E%3C/svg%3E">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<script>
+  // Apply the saved theme before first paint.
+  try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -36,6 +40,7 @@
   "description": "Private, on-device meeting recorder and AI note taker for macOS. Records calls and meetings, transcribes them locally and writes summaries, decisions and action items.",
   "url": "https://ramazanbakir.github.io/offrecord/",
   "downloadUrl": "https://github.com/RamazanBakir/offrecord",
+  "image": "https://ramazanbakir.github.io/offrecord/images/icon.png",
   "screenshot": "https://ramazanbakir.github.io/offrecord/images/detail.png",
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
@@ -56,323 +61,454 @@
 }
 </script>
 <style>
-/* Layout: centered 1080px column; hero split (copy | product shot); sections alternate text-led and image-led; transcript-style timestamps mark the real recording sequence. */
+/* Layout: floating pill nav; hero = headline + live recorder demo; content sections use a left rail
+   labelled with meeting timecodes (00:00 record → 28:32 notes), content in a 760px column beside it. */
 :root {
-  --bg: #f5f6f8;
+  --bg: #f6f6f4;
+  --bg-2: #eeeeeb;
   --surface: #ffffff;
-  --ink: #15171c;
-  --muted: #5b6170;
-  --line: #e1e4ea;
-  --accent: #272f8f;
-  --accent-soft: #e8eafb;
-  --rec: #e5483b;
-  --code-bg: #15171c;
-  --code-fg: #e9ebf0;
-  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
-  --body: "Inter", -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  --shadow: 0 1px 2px rgba(20, 24, 40, .06), 0 18px 48px -12px rgba(20, 24, 60, .22);
+  --ink: #16171b;
+  --ink-2: #3b3d45;
+  --muted: #6c6f79;
+  --line: #e2e2de;
+  --rec: #ef3f37;
+  --rec-soft: #fde6e2;
+  --me: #1f7fb8;
+  --them: #c03f95;
+  --ok: #2f8f5b;
+  --chrome: #e9e9e6;
+  --term-bg: #16171b;
+  --term-fg: #ecebe7;
+  --sans: "Geist", -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --shadow: 0 1px 1px rgba(20, 20, 30, .04), 0 24px 60px -20px rgba(20, 20, 40, .25);
+  --glow: radial-gradient(60% 50% at 70% 0%, rgba(239, 63, 55, .10), transparent 70%);
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101217; --surface: #171a21; --ink: #eceef3; --muted: #9ba1b0; --line: #262a34;
-    --accent: #a9b0ff; --accent-soft: #1f2340; --rec: #ff6a5c; --code-bg: #0b0c10; --code-fg: #e9ebf0;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 18px 48px -12px rgba(0, 0, 0, .6);
+  :root:not([data-theme="light"]) {
+    --bg: #0c0d10; --bg-2: #111216; --surface: #15161b; --ink: #f2f0eb; --ink-2: #c9c7c1; --muted: #8b8d96;
+    --line: #23252c; --rec: #ff5a4a; --rec-soft: #2a1513; --me: #5fb6ea; --them: #f07ac8; --ok: #5cc48a;
+    --chrome: #1c1d23; --term-bg: #08090b; --term-fg: #ecebe7;
+    --shadow: 0 1px 1px rgba(0, 0, 0, .3), 0 30px 80px -24px rgba(0, 0, 0, .8);
+    --glow: radial-gradient(60% 50% at 70% 0%, rgba(255, 90, 74, .14), transparent 70%);
     color-scheme: dark;
   }
 }
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
-img { max-width: 100%; height: auto; display: block; }
-a { color: var(--accent); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
-.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
-h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.08; text-wrap: balance; margin: 0; }
-h2 { font-size: clamp(28px, 4vw, 40px); }
-h3 { font-size: 19px; letter-spacing: -0.01em; }
-p { margin: 0; }
-.lede { color: var(--muted); font-size: 18px; max-width: 58ch; }
-.mono { font-family: var(--mono); }
+:root[data-theme="dark"] {
+  --bg: #0c0d10; --bg-2: #111216; --surface: #15161b; --ink: #f2f0eb; --ink-2: #c9c7c1; --muted: #8b8d96;
+  --line: #23252c; --rec: #ff5a4a; --rec-soft: #2a1513; --me: #5fb6ea; --them: #f07ac8; --ok: #5cc48a;
+  --chrome: #1c1d23; --term-bg: #08090b; --term-fg: #ecebe7;
+  --shadow: 0 1px 1px rgba(0, 0, 0, .3), 0 30px 80px -24px rgba(0, 0, 0, .8);
+  --glow: radial-gradient(60% 50% at 70% 0%, rgba(255, 90, 74, .14), transparent 70%);
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
 
-/* Top bar */
-.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid transparent; }
-.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 60px; }
-.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 19px; color: var(--ink); text-decoration: none; }
-.brand-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; }
-.brand-mark::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--rec); }
-.top nav { display: flex; align-items: center; gap: 22px; font-size: 14px; }
-.top nav a { color: var(--muted); text-decoration: none; }
-.top nav a:hover { color: var(--ink); }
-.top nav .gh { color: var(--ink); font-weight: 500; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
-@media (max-width: 720px) { .top nav a:not(.gh) { display: none; } }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; transition: background .3s, color .3s; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+::selection { background: var(--rec); color: #fff; }
+:focus-visible { outline: 2px solid var(--rec); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.035em; line-height: 1.04; text-wrap: balance; }
+p { margin: 0; }
+code, .mono { font-family: var(--mono); }
+.wrap { max-width: 1140px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+
+/* Nav */
+.nav { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 0; right: 0; z-index: 50; display: flex; justify-content: center; gap: 8px; padding: 0 16px; pointer-events: none; }
+.nav > * { pointer-events: auto; }
+.pill { display: flex; align-items: center; gap: 4px; padding: 6px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--surface) 78%, transparent); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); box-shadow: 0 8px 30px -12px rgba(0,0,0,.25); }
+.brand { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 6px; font-weight: 600; letter-spacing: -0.02em; text-decoration: none; }
+.brand svg { width: 24px; height: 24px; }
+.pill a.link { font-size: 14px; color: var(--muted); text-decoration: none; padding: 6px 11px; border-radius: 999px; transition: color .15s, background .15s; }
+.pill a.link:hover { color: var(--ink); background: var(--bg-2); }
+.pill a.gh { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 500; text-decoration: none; padding: 6px 12px; border-radius: 999px; background: var(--ink); color: var(--bg); }
+.pill a.gh .stars { font: 500 12px var(--mono); opacity: .75; }
+.pill a.gh .stars:empty { display: none; }
+.theme { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 78%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); color: var(--ink); cursor: pointer; }
+.theme svg { width: 18px; height: 18px; }
+.theme .sun { display: none; }
+:root[data-theme="dark"] .theme .sun { display: block; }
+:root[data-theme="dark"] .theme .moon { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .theme .sun { display: block; } :root:not([data-theme="light"]) .theme .moon { display: none; } }
+@media (max-width: 760px) { .pill a.link { display: none; } }
 
 /* Hero */
-.hero { padding: 56px 0 40px; display: grid; gap: 40px; }
-.status { display: inline-flex; align-items: center; gap: 10px; font: 500 13px var(--mono); color: var(--muted); padding: 6px 12px 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); width: fit-content; }
-.status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); box-shadow: 0 0 0 0 var(--rec); animation: pulse 2s infinite; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rec) 60%, transparent); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
-.hero h1 { font-size: clamp(40px, 7vw, 76px); max-width: 14ch; }
-.hero h1 em { font-style: normal; color: var(--accent); }
-.hero-copy { display: grid; gap: 22px; justify-items: start; }
-.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 15px var(--body); padding: 12px 18px; border-radius: 10px; text-decoration: none; border: 1px solid transparent; cursor: pointer; }
-.btn-primary { background: var(--accent); color: var(--bg); }
-.btn-primary:hover { filter: brightness(1.08); }
-.btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
-.meta-line { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 16px; }
-.meta-line span::before { content: "✓ "; color: var(--accent); }
-.shot { border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); background: var(--surface); }
+.hero { position: relative; padding: 140px 0 40px; background: var(--glow); }
+.hero-grid { display: grid; gap: 48px; align-items: center; }
+@media (min-width: 1000px) { .hero-grid { grid-template-columns: 1fr 1.05fr; } }
+.rec-badge { display: inline-flex; align-items: center; gap: 10px; font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rec-badge b { display: inline-flex; align-items: center; gap: 6px; color: var(--rec); font-weight: 500; }
+.rec-badge b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rec); animation: blink 1.6s steps(1) infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.hero h1 { font-size: clamp(44px, 6.4vw, 80px); margin: 22px 0 22px; }
+.hero h1 .strike, .hero h1 .keep { display: block; width: fit-content; white-space: nowrap; }
+.hero h1 .strike { position: relative; color: var(--muted); font-size: .62em; margin: .18em 0 .12em; }
+.hero h1 .keep { color: var(--ink); }
+.hero h1 .strike::after { content: ""; position: absolute; left: -2%; right: -2%; top: 54%; height: .07em; background: var(--rec); border-radius: 2px; transform-origin: left; animation: strike 0.7s .4s cubic-bezier(.6,0,.2,1) both; }
+@keyframes strike { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.lede { font-size: 19px; color: var(--ink-2); max-width: 34em; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 9px; font: 500 15px var(--sans); padding: 13px 20px; border-radius: 12px; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .15s, background .15s, border-color .15s; }
+.btn:hover { transform: translateY(-1px); }
+.btn-rec { background: var(--rec); color: #fff; }
+.btn-rec::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #fff; }
+.btn-line { border-color: var(--line); background: var(--surface); }
+.btn-line:hover { border-color: var(--muted); }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 26px; font: 400 13px var(--mono); color: var(--muted); }
+.checks span::before { content: "✓ "; color: var(--ok); }
 
-/* Install box */
-.install { background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 4px; width: 100%; max-width: 560px; }
-.install-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 6px; font: 500 12px var(--mono); color: #8d93a3; }
-.install pre { margin: 0; padding: 4px 14px 14px; font: 400 14px/1.7 var(--mono); overflow-x: auto; }
-.install pre .p { color: #6f7586; user-select: none; }
-.copy { font: 500 12px var(--body); color: var(--code-fg); background: #262a34; border: 0; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
-.copy:hover { background: #323745; }
+/* Live demo window */
+.window { border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
+.titlebar { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; background: var(--chrome); border-bottom: 1px solid var(--line); }
+.lights { display: flex; gap: 7px; }
+.lights i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+.lights i:nth-child(2) { background: #febc2e; }
+.lights i:nth-child(3) { background: #28c840; }
+.titlebar .t { flex: 1; font-size: 12.5px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.demo-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); animation: blink 1.6s steps(1) infinite; flex: none; }
+.demo-bar .time { font: 500 14px var(--mono); font-variant-numeric: tabular-nums; }
+.demo-bar canvas { flex: 1; height: 28px; min-width: 0; }
+.demo-bar .stop { font: 500 12px var(--sans); padding: 5px 10px; border-radius: 7px; background: var(--bg-2); color: var(--ink-2); border: 1px solid var(--line); }
+.demo-body { display: grid; min-height: 380px; }
+@media (min-width: 640px) { .demo-body { grid-template-columns: 1.25fr 1fr; } }
+.transcript { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.5; border-bottom: 1px solid var(--line); }
+@media (min-width: 640px) { .transcript { border-bottom: 0; border-right: 1px solid var(--line); } }
+.line { display: grid; gap: 2px; }
+.line .who { font: 500 11px var(--mono); letter-spacing: .04em; display: flex; gap: 8px; }
+.line .who em { font-style: normal; color: var(--muted); font-weight: 400; }
+.line.me .who { color: var(--me); }
+.line.them .who { color: var(--them); }
+.line .txt { color: var(--ink); }
+.line .caret { display: inline-block; width: 2px; height: 1em; background: var(--rec); vertical-align: -2px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+.notes { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; background: var(--bg-2); }
+.notes h4 { margin: 0 0 6px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.notes .block { transition: opacity .5s, transform .5s; }
+.notes .pending { opacity: .0; transform: translateY(6px); }
+.notes ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.notes li { display: flex; gap: 8px; align-items: baseline; }
+.notes li .box { flex: none; width: 13px; height: 13px; border: 1.5px solid var(--muted); border-radius: 4px; transform: translateY(2px); }
+.notes li .bullet { flex: none; width: 5px; height: 5px; border-radius: 50%; background: var(--ink-2); transform: translateY(-2px); }
+.notes .waiting { display: none; gap: 10px; font: 400 12px var(--mono); color: var(--muted); }
+.notes.listening .waiting { display: grid; }
+.notes.listening .block { display: none; }
+.notes .waiting i { display: block; height: 8px; border-radius: 4px; background: var(--line); width: 85%; animation: shimmer 1.4s ease-in-out infinite; }
+@keyframes shimmer { 50% { opacity: .45; } }
+.notes .gen { font: 400 11px var(--mono); color: var(--muted); margin-top: auto; display: flex; align-items: center; gap: 6px; }
+.notes .gen::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
 
-/* Sections */
-section { padding: 72px 0; }
-.section-head { display: grid; gap: 14px; margin-bottom: 36px; }
-.kicker { font: 500 13px var(--mono); color: var(--accent); letter-spacing: .02em; }
+/* Works with */
+.works { padding: 56px 0 24px; }
+.works p { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 18px; }
+.works ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 34px; font-size: 19px; font-weight: 500; letter-spacing: -0.02em; color: var(--ink-2); }
+.works li:last-child { color: var(--rec); }
 
-/* Timeline */
-.timeline { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
-.tl { display: grid; grid-template-columns: 96px 1fr; gap: 24px; padding: 0 0 32px 24px; position: relative; }
-.tl::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--accent); }
-.tl:first-child::before { background: var(--rec); border-color: var(--rec); }
-.tl time { font: 500 14px var(--mono); color: var(--muted); padding-top: 2px; }
-.tl div { display: grid; gap: 6px; max-width: 60ch; }
-.tl p { color: var(--muted); }
-@media (max-width: 560px) { .tl { grid-template-columns: 1fr; gap: 4px; } }
+/* Rail sections */
+.sec { padding: 88px 0; border-top: 1px solid var(--line); }
+.sec-grid { display: grid; gap: 28px; }
+@media (min-width: 900px) { .sec-grid { grid-template-columns: 200px 1fr; gap: 40px; } }
+.rail { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
+@media (min-width: 900px) { .rail { flex-direction: column; gap: 6px; position: sticky; top: 100px; align-self: start; } }
+.rail b { color: var(--rec); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: .02em; font-size: 13px; }
+.sec h2 { font-size: clamp(34px, 4.6vw, 56px); max-width: 15em; }
+.sec h2 span { color: var(--muted); }
+.sec .intro { font-size: 18px; color: var(--ink-2); max-width: 38em; margin-top: 18px; }
+.content { min-width: 0; }
 
-/* Features */
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.feat { background: var(--surface); padding: 24px; display: grid; gap: 8px; align-content: start; }
-.feat .ic { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; margin-bottom: 6px; }
-.feat .ic svg { width: 18px; height: 18px; }
+.two { display: grid; gap: 14px; margin-top: 36px; }
+@media (min-width: 700px) { .two { grid-template-columns: 1fr 1fr; } }
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--surface); display: grid; gap: 8px; align-content: start; }
+.card h3 { font-size: 18px; letter-spacing: -0.02em; }
+.card p { color: var(--muted); font-size: 15px; }
+.card .k { font: 500 12px var(--mono); color: var(--rec); }
+kbd { font: 500 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-2); color: var(--ink); }
+
+.shot { margin-top: 36px; }
+.shot .window img { width: 100%; }
+.pill-img { margin-top: 18px; width: 100%; max-width: 620px; border-radius: 14px; box-shadow: var(--shadow); }
+
+/* Speaker demo */
+.speakers { margin-top: 36px; display: grid; gap: 10px; font-size: 16px; }
+.speakers .line { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); max-width: 560px; }
+.speakers .line.them { margin-left: auto; }
+.langs { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+.langs span { font: 400 13px var(--mono); padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); }
+
+/* Feature list */
+.feats { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); border-top: 1px solid var(--line); }
+.feat { padding: 22px 22px 22px 0; border-bottom: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.feat h3 { font-size: 17px; letter-spacing: -0.015em; display: flex; gap: 10px; align-items: center; }
+.feat h3 svg { width: 18px; height: 18px; color: var(--rec); flex: none; }
 .feat p { color: var(--muted); font-size: 15px; }
 
-/* Split showcase */
-.split { display: grid; gap: 36px; align-items: center; }
-@media (min-width: 900px) { .split { grid-template-columns: 5fr 7fr; } .split.rev { grid-template-columns: 7fr 5fr; } .split.rev .split-copy { order: 2; } }
-.split-copy { display: grid; gap: 16px; }
-.split-copy ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; color: var(--muted); }
-.split-copy li { padding-left: 22px; position: relative; }
-.split-copy li::before { content: ""; position: absolute; left: 2px; top: 10px; width: 8px; height: 8px; border-radius: 2px; background: var(--accent); }
-.pill-shot { margin-top: 28px; max-width: 640px; filter: drop-shadow(0 18px 30px rgba(20, 24, 60, .25)); }
-
-/* Comparison */
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+/* Compare */
+.table-wrap { margin-top: 36px; overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 15px; }
-th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+th, td { text-align: left; padding: 15px 20px; border-bottom: 1px solid var(--line); }
 tr:last-child td { border-bottom: 0; }
-thead th { font: 600 13px var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-thead th:nth-child(2) { color: var(--accent); }
+thead th { font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--bg-2); }
+thead th:nth-child(2) { color: var(--rec); }
+td:first-child { color: var(--ink-2); }
 td:nth-child(2) { font-weight: 600; }
 td:nth-child(3) { color: var(--muted); }
 
-/* Install section */
-.steps { display: grid; gap: 28px; }
-@media (min-width: 900px) { .steps { grid-template-columns: 1fr 1fr; align-items: start; } }
-.reqs { display: grid; gap: 10px; }
-.req { display: flex; gap: 12px; align-items: baseline; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
-.req b { font-weight: 600; min-width: 90px; }
-.req span { color: var(--muted); }
+/* Install */
+.term { margin-top: 36px; background: var(--term-bg); color: var(--term-fg); border-radius: 14px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); }
+.term .titlebar { background: #1d1e24; border-color: #2a2b31; }
+.term .titlebar .t { color: #8b8d96; }
+.term pre { margin: 0; padding: 18px 20px 22px; font: 400 14.5px/1.85 var(--mono); overflow-x: auto; }
+.term .p { color: #ff5a4a; user-select: none; }
+.term .c { color: #6f727c; }
+.copy { font: 500 12px var(--sans); color: #ecebe7; background: #2a2b31; border: 0; padding: 6px 11px; border-radius: 7px; cursor: pointer; }
+.copy:hover { background: #383940; }
+.reqs { margin-top: 18px; display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.req { padding: 16px 18px; border-right: 1px solid var(--line); display: grid; gap: 2px; }
+.req:last-child { border-right: 0; }
+.req small { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.req span { font-weight: 500; }
 
 /* FAQ */
-.faq { display: grid; gap: 0; border-top: 1px solid var(--line); }
-details { border-bottom: 1px solid var(--line); padding: 18px 0; }
-summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq { margin-top: 28px; border-top: 1px solid var(--line); }
+details { border-bottom: 1px solid var(--line); padding: 20px 0; }
+summary { cursor: pointer; font-weight: 500; font-size: 18px; letter-spacing: -0.015em; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
 summary::-webkit-details-marker { display: none; }
-summary::after { content: "+"; font: 400 22px/1 var(--mono); color: var(--muted); }
-details[open] summary::after { content: "–"; }
-details p { color: var(--muted); margin-top: 10px; max-width: 70ch; }
+summary::after { content: "+"; font: 400 20px/1 var(--mono); color: var(--muted); transition: transform .2s; }
+details[open] summary::after { transform: rotate(45deg); color: var(--rec); }
+details p { color: var(--muted); margin-top: 10px; max-width: 42em; }
 
-/* CTA + footer */
-.cta { text-align: center; display: grid; gap: 18px; justify-items: center; padding: 64px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
-.cta p { color: var(--muted); max-width: 52ch; }
-footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
-footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
-footer a { color: var(--muted); }
+/* Final CTA */
+.final { padding: 110px 0 90px; text-align: center; border-top: 1px solid var(--line); background: radial-gradient(50% 60% at 50% 100%, color-mix(in srgb, var(--rec) 12%, transparent), transparent 70%); }
+.final .mark { width: 76px; height: 76px; margin: 0 auto 26px; filter: drop-shadow(0 18px 30px rgba(0,0,0,.3)); }
+.final h2 { font-size: clamp(38px, 6vw, 72px); }
+.final p { color: var(--ink-2); font-size: 18px; margin: 18px auto 0; max-width: 32em; }
+.final .cta-row { justify-content: center; }
+footer { border-top: 1px solid var(--line); padding: 30px 0 44px; font-size: 14px; color: var(--muted); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: space-between; align-items: center; }
+footer .brand { padding: 0; color: var(--ink); }
+footer nav { display: flex; flex-wrap: wrap; gap: 22px; }
+footer nav a { text-decoration: none; }
+footer nav a:hover { color: var(--ink); }
 
-@media (min-width: 960px) { .hero { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .status .dot { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 </style>
 </head>
 <body>
 
-<header class="top">
-  <div class="wrap">
-    <a class="brand" href="#"><span class="brand-mark" aria-hidden="true"></span>Offrecord</a>
-    <nav aria-label="Main">
-      <a href="#how">How it works</a>
-      <a href="#features">Features</a>
-      <a href="#install">Install</a>
-      <a href="#faq">FAQ</a>
-      <a class="gh" href="https://github.com/RamazanBakir/offrecord">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
-      </a>
-    </nav>
+<header class="nav">
+  <div class="pill">
+    <a class="brand" href="#top" aria-label="Offrecord home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5f4a"/><stop offset="1" stop-color="#ed383d"/></linearGradient><clipPath id="lc"><path d="M12 3a9 9 0 0 1 0 18z"/></clipPath></defs><path d="M12 3a9 9 0 0 0 0 18z" fill="url(#lg)"/><g clip-path="url(#lc)" fill="currentColor"><rect x="13.6" y="3" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="6.95" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="10.9" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="14.85" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="18.8" width="10" height="2.2" rx="1.1"/></g></svg>
+      Offrecord
+    </a>
+    <a class="link" href="#record">How it works</a>
+    <a class="link" href="#features">Features</a>
+    <a class="link" href="#compare">Compare</a>
+    <a class="link" href="#install">Install</a>
+    <a class="link" href="#faq">FAQ</a>
+    <a class="gh" href="https://github.com/RamazanBakir/offrecord">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub <span class="stars" id="stars"></span>
+    </a>
   </div>
+  <button class="theme" id="theme" type="button" aria-label="Switch between light and dark theme">
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
 </header>
 
-<main>
-  <div class="wrap hero">
-    <div class="hero-copy">
-      <span class="status"><span class="dot" aria-hidden="true"></span>v0.1.0 · free &amp; open source</span>
-      <h1>Meeting notes that stay <em>on your Mac</em>.</h1>
-      <p class="lede">Offrecord records your calls and meetings, transcribes them on-device and writes the summary, decisions and to-dos for you. It works with Zoom, Google Meet, Teams or any call app, and no bot ever joins your meeting.</p>
-      <div class="actions">
-        <a class="btn btn-primary" href="#install">Install Offrecord</a>
-        <a class="btn btn-ghost" href="https://github.com/RamazanBakir/offrecord">View on GitHub</a>
-      </div>
-      <div class="meta-line"><span>No account</span><span>No cloud upload</span><span>MIT licensed</span><span>macOS 26 · Apple silicon</span></div>
-    </div>
-    <img class="shot" src="images/detail.png" width="1600" height="1013" alt="Offrecord meeting notes with summary, to-dos, decisions and open questions generated on-device from a recorded call">
-  </div>
-
-  <section id="how">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="kicker">How it works</span>
-        <h2>From call to notes in one meeting</h2>
-      </div>
-      <div class="timeline">
-        <div class="tl"><time>00:00:00</time><div><h3>Press record, or let Offrecord ask</h3><p>Start with ⌃⌥R from anywhere or the menu bar. When another app opens your microphone for a call, Offrecord offers to record, and it stops by itself when the call ends.</p></div></div>
-        <div class="tl"><time>00:00:02</time><div><h3>Both sides of the call, captured locally</h3><p>Your microphone gets Apple's voice processing; the other side comes from system audio. Audio is written to disk as you talk, so a crash never costs you the meeting.</p></div></div>
-        <div class="tl"><time>live</time><div><h3>Transcript as you speak</h3><p>Apple's on-device SpeechAnalyzer transcribes in real time, labelled <b>Me</b> and <b>Them</b>. Type notes or press ⌘B to bookmark a moment.</p></div></div>
-        <div class="tl"><time>+5 s</time><div><h3>Notes, ready when you stop</h3><p>A summary, decisions, action items and open questions, written by Apple Intelligence on-device or by local rules. Saved as Markdown next to your audio.</p></div></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="features" style="padding-top: 24px;">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="kicker">Features</span>
-        <h2>Everything a meeting assistant does, minus the server</h2>
-      </div>
-      <div class="grid">
-        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></span><h3>Any call app, or in person</h3><p>Zoom, Meet, Teams, Slack, WhatsApp, FaceTime. Optional screen recording too.</p></div>
-        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg></span><h3>Live transcription</h3><p>Speaker labels and every language Apple's speech recognition supports, Turkish included.</p></div>
-        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg></span><h3>Automatic notes</h3><p>Summary, key topics, decisions, action items and open questions after every meeting.</p></div>
-        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span><h3>One to-do list</h3><p>Action items from all your meetings in one place, with checkboxes.</p></div>
-        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg></span><h3>Crash-safe</h3><p>If the app or your Mac stops mid-meeting, the recording is recovered on next launch.</p></div>
-        <div class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></span><h3>Plain files you own</h3><p>audio.m4a, notes.md and JSON in a folder you choose. Search everything inside the app.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <div class="split">
-        <div class="split-copy">
-          <span class="kicker">While you record</span>
-          <h2>Stays out of the way of your call</h2>
-          <p class="lede">A small floating bar sits above every app with the timer, levels, a note field and the stop button. The full transcript is one click away.</p>
-          <ul>
-            <li>Pause and resume with ⇧⌘P</li>
-            <li>Mark key moments with ⌘B</li>
-            <li>Calendar-aware titles and attendees</li>
-          </ul>
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="rec-badge"><b>Rec</b> v0.1.0 · free &amp; open source · macOS</span>
+        <h1>Your meetings,<span class="strike">in the cloud</span><span class="keep">off the record.</span></h1>
+        <p class="lede">Offrecord records your calls, transcribes them on your Mac and writes the summary, decisions and to-dos when you hang up. No bot joins the call. Nothing is uploaded.</p>
+        <div class="cta-row">
+          <a class="btn btn-rec" href="#install">Install in one command</a>
+          <a class="btn btn-line" href="https://github.com/RamazanBakir/offrecord">Read the source</a>
         </div>
-        <img class="shot" src="images/recording.png" width="1600" height="1013" loading="lazy" alt="Live on-device transcript with Me and Them speaker labels while recording a call">
+        <div class="checks"><span>No account</span><span>No upload</span><span>MIT</span><span>Apple silicon</span></div>
       </div>
-      <img class="pill-shot" src="images/pill.png" width="1600" height="217" loading="lazy" alt="Floating recording bar with timer, level meters, note field and stop button">
-    </div>
-  </section>
 
-  <section style="padding-top: 24px;">
-    <div class="wrap">
-      <div class="split rev">
-        <div class="split-copy">
-          <span class="kicker">After the meeting</span>
-          <h2>Every promise, in one list</h2>
-          <p class="lede">Offrecord pulls the action items out of each meeting and keeps them together, so "I'll send that by Thursday" doesn't get lost.</p>
+      <div class="window" aria-label="Animated example of Offrecord transcribing a call and writing notes">
+        <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="t">Product sync – Q3 launch</span><span style="width:47px"></span></div>
+        <div class="demo-bar">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="time" id="demo-time">28:31</span>
+          <canvas id="wave" aria-hidden="true"></canvas>
+          <span class="stop">■ Stop</span>
         </div>
-        <img class="shot" src="images/tasks.png" width="1600" height="1013" loading="lazy" alt="To-do list collecting action items from all recorded meetings">
+        <div class="demo-body">
+          <div class="transcript" id="transcript">
+            <div class="line them"><span class="who">Them <em>27:48</em></span><span class="txt">We decided to launch on September 12.</span></div>
+            <div class="line me"><span class="who">Me <em>27:55</em></span><span class="txt">That gives QA one more week for the export feature.</span></div>
+            <div class="line them"><span class="who">Them <em>28:06</em></span><span class="txt">Alex will fix the remaining export bugs by Friday.</span></div>
+            <div class="line me"><span class="who">Me <em>28:19</em></span><span class="txt">I'll rewrite the pricing copy and share a draft by Thursday.</span></div>
+          </div>
+          <div class="notes" id="notes">
+            <div class="block" data-step="1"><h4>Summary</h4><p>Launch moves to September 12 to give QA time for export. Pricing copy and export bugs are the last open items.</p></div>
+            <div class="block" data-step="2"><h4>Decisions</h4><ul><li><span class="bullet"></span>Launch on September 12</li></ul></div>
+            <div class="block" data-step="3"><h4>To-dos</h4><ul><li><span class="box"></span>Alex: fix export bugs · Fri</li><li><span class="box"></span>Me: pricing copy draft · Thu</li></ul></div>
+            <div class="waiting" id="waiting"><span>Listening… notes are written when the call ends</span><i></i><i></i><i style="width:55%"></i></div>
+            <div class="gen">Written on-device</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="compare">
+  <section class="works">
     <div class="wrap">
-      <div class="section-head">
-        <span class="kicker">Compare</span>
-        <h2>A private alternative to cloud note takers</h2>
-        <p class="lede">Otter.ai, Fireflies, Fathom and Granola are good products, but they process your conversations on their servers. Offrecord does the same job on your own Mac.</p>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th scope="col"></th><th scope="col">Offrecord</th><th scope="col">Typical cloud note taker</th></tr></thead>
-          <tbody>
-            <tr><td>Where audio is processed</td><td>On your Mac</td><td>Vendor's servers</td></tr>
-            <tr><td>Bot joins your meeting</td><td>No</td><td>Often</td></tr>
-            <tr><td>Works with any call app or in person</td><td>Yes</td><td>Usually specific platforms</td></tr>
-            <tr><td>Account required</td><td>No</td><td>Yes</td></tr>
-            <tr><td>Price</td><td>Free, open source</td><td>Monthly subscription</td></tr>
-            <tr><td>Your files</td><td>Audio, Markdown, JSON in your folder</td><td>Inside the vendor's app</td></tr>
-          </tbody>
-        </table>
+      <p>Works with any call on your Mac</p>
+      <ul><li>Zoom</li><li>Google Meet</li><li>Microsoft Teams</li><li>Slack</li><li>WhatsApp</li><li>FaceTime</li><li>In person</li></ul>
+    </div>
+  </section>
+
+  <section class="sec" id="record">
+    <div class="wrap sec-grid">
+      <div class="rail"><b>00:00</b>Record</div>
+      <div class="content">
+        <h2>One click, both sides of the call. <span>Or no click at all.</span></h2>
+        <p class="intro">Offrecord captures your microphone with Apple's voice processing and the other side from system audio. When another app opens your mic for a call, it offers to record, and it stops when the call ends.</p>
+        <div class="two">
+          <div class="card"><span class="k">⌃⌥R</span><h3>Start from anywhere</h3><p>Global shortcut, menu bar icon, or the record button. Add the screen too if you want a video.</p></div>
+          <div class="card"><span class="k">auto</span><h3>Call detection</h3><p>Sees which app is using the microphone and offers to record. Ends the recording when the call does.</p></div>
+          <div class="card"><span class="k">.caf → .m4a</span><h3>Crash-safe by design</h3><p>Audio is written to disk while you talk. If your Mac stops mid-meeting, the recording is recovered on next launch.</p></div>
+          <div class="card"><span class="k">⌘B</span><h3>Stays out of the way</h3><p>A floating bar with timer, levels, a note field and stop. Bookmark key moments without leaving the call.</p></div>
+        </div>
+        <img class="pill-img" src="images/pill.png" width="1600" height="217" loading="lazy" alt="Floating Offrecord recording bar with timer, level meters, note field and stop button">
       </div>
     </div>
   </section>
 
-  <section id="install">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="kicker">Install</span>
-        <h2>Build it on your Mac in about a minute</h2>
-        <p class="lede">Offrecord is distributed as source. One script checks your Mac, creates a local signing certificate so macOS remembers permissions, builds the app and puts it in your Applications folder. No Apple Developer account, no Gatekeeper warning.</p>
+  <section class="sec" id="transcribe">
+    <div class="wrap sec-grid">
+      <div class="rail"><b>00:01</b>Transcribe</div>
+      <div class="content">
+        <h2>A live transcript that knows who said what.</h2>
+        <p class="intro">Apple's on-device SpeechAnalyzer transcribes as you talk. Your mic and the call audio are transcribed separately, so every line is labelled <b style="color:var(--me)">Me</b> or <b style="color:var(--them)">Them</b> without guesswork.</p>
+        <div class="speakers">
+          <div class="line them"><span class="who">Them <em>04:12</em></span><span class="txt">Users still find the pricing page confusing.</span></div>
+          <div class="line me"><span class="who">Me <em>04:20</em></span><span class="txt">I will rewrite the pricing copy and share a draft by Thursday.</span></div>
+        </div>
+        <div class="langs"><span>English</span><span>Türkçe</span><span>Deutsch</span><span>Français</span><span>Español</span><span>Italiano</span><span>日本語</span><span>…every language your Mac supports</span></div>
+        <div class="shot"><div class="window"><div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="t">Recording</span><span style="width:47px"></span></div><img src="images/recording.png" width="1600" height="1013" loading="lazy" alt="Offrecord live on-device transcript with Me and Them speaker labels while recording a call"></div></div>
       </div>
-      <div class="steps">
-        <div class="install">
-          <div class="install-head"><span>Terminal</span><button class="copy" type="button" data-copy="git clone https://github.com/RamazanBakir/offrecord.git&#10;cd offrecord&#10;./scripts/install.sh">Copy</button></div>
-<pre><span class="p">$ </span>git clone https://github.com/RamazanBakir/offrecord.git
-<span class="p">$ </span>cd offrecord
-<span class="p">$ </span>./scripts/install.sh</pre>
+    </div>
+  </section>
+
+  <section class="sec" id="notes-sec">
+    <div class="wrap sec-grid">
+      <div class="rail"><b>28:32</b>Notes</div>
+      <div class="content">
+        <h2>Hang up. Your notes are already written.</h2>
+        <p class="intro">A summary, key topics, decisions, action items and open questions, saved as Markdown next to the audio. Apple Intelligence writes them on-device when it's on; local rules take over when it isn't.</p>
+        <div class="shot"><div class="window"><div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="t">Product sync – Q3 launch</span><span style="width:47px"></span></div><img src="images/detail.png" width="1600" height="1013" loading="lazy" alt="Offrecord meeting notes with summary, to-dos, decisions and open questions generated on-device"></div></div>
+        <div class="two">
+          <div class="card"><span class="k">to-dos</span><h3>Every promise in one list</h3><p>Action items from all your meetings are collected in one checklist, so "I'll send it by Thursday" doesn't get lost.</p></div>
+          <div class="card"><span class="k">notes.md</span><h3>Plain files you own</h3><p>audio.m4a, notes.md and JSON in a folder you choose. Open them in any editor, sync them anywhere.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="features">
+    <div class="wrap sec-grid">
+      <div class="rail"><b>+</b>Everything else</div>
+      <div class="content">
+        <h2>All the small things a meeting app should do.</h2>
+        <div class="feats">
+          <div class="feat"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 10h4l3-6 4 16 3-10h4"/></svg>Clear audio</h3><p>Voice processing during calls and level balancing afterwards, so a quiet mic is still easy to hear.</p></div>
+          <div class="feat"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendar aware</h3><p>Names the recording after the current event and lists its attendees.</p></div>
+          <div class="feat"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Full-text search</h3><p>Find anything across titles, notes and transcripts.</p></div>
+          <div class="feat"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/></svg>Transcribe files</h3><p>Drop in an existing audio or video file with ⌘O.</p></div>
+          <div class="feat"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="13" rx="2"/><path d="M8 21h8"/></svg>Screen recording</h3><p>Optional screen video next to the audio, for demos and reviews.</p></div>
+          <div class="feat"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>English &amp; Türkçe</h3><p>Interface in English or Turkish, switchable instantly in Settings.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="compare">
+    <div class="wrap sec-grid">
+      <div class="rail"><b>vs</b>Compare</div>
+      <div class="content">
+        <h2>The note taker that never leaves the room.</h2>
+        <p class="intro">Otter.ai, Fireflies, Fathom and Granola process your conversations on their servers. Offrecord does the same job on your own Mac.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col"></th><th scope="col">Offrecord</th><th scope="col">Typical cloud note taker</th></tr></thead>
+            <tbody>
+              <tr><td>Where audio is processed</td><td>On your Mac</td><td>Vendor's servers</td></tr>
+              <tr><td>Bot joins your meeting</td><td>Never</td><td>Often</td></tr>
+              <tr><td>Works with any app or in person</td><td>Yes</td><td>Usually specific platforms</td></tr>
+              <tr><td>Account required</td><td>No</td><td>Yes</td></tr>
+              <tr><td>Price</td><td>Free, open source</td><td>Monthly subscription</td></tr>
+              <tr><td>Your files</td><td>Audio, Markdown, JSON in your folder</td><td>Inside the vendor's app</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="install">
+    <div class="wrap sec-grid">
+      <div class="rail"><b>~1 min</b>Install</div>
+      <div class="content">
+        <h2>Build it yourself. It takes a minute.</h2>
+        <p class="intro">One script checks your Mac, creates a local signing certificate so macOS remembers permissions, builds the app and puts it in your Applications folder. No Apple Developer account and no Gatekeeper warning.</p>
+        <div class="term">
+          <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="t">Terminal — zsh</span><button class="copy" type="button" data-copy="git clone https://github.com/RamazanBakir/offrecord.git&#10;cd offrecord&#10;./scripts/install.sh">Copy</button></div>
+<pre><span class="p">❯ </span>git clone https://github.com/RamazanBakir/offrecord.git
+<span class="p">❯ </span>cd offrecord
+<span class="p">❯ </span>./scripts/install.sh
+<span class="c">  ✓ macOS 26 · Apple silicon · Swift toolchain
+  ✓ Local signing certificate
+  ✓ Built and installed ~/Applications/Offrecord.app</span></pre>
         </div>
         <div class="reqs">
-          <div class="req"><b>macOS</b><span>26 Tahoe or later</span></div>
-          <div class="req"><b>Mac</b><span>Apple silicon (M1 or later)</span></div>
-          <div class="req"><b>Tools</b><span>Xcode 26 or Command Line Tools: <code class="mono">xcode-select --install</code></span></div>
-          <div class="req"><b>Update</b><span><code class="mono">git pull &amp;&amp; ./scripts/install.sh</code></span></div>
+          <div class="req"><small>macOS</small><span>26 Tahoe or later</span></div>
+          <div class="req"><small>Mac</small><span>Apple silicon (M1+)</span></div>
+          <div class="req"><small>Tools</small><span>Xcode Command Line Tools</span></div>
+          <div class="req"><small>Update</small><span><code>git pull && ./scripts/install.sh</code></span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <section id="faq">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="kicker">FAQ</span>
-        <h2>Questions</h2>
-      </div>
-      <div class="faq">
-        <details><summary>Does Offrecord send my recordings to the cloud?</summary><p>No. Recording, transcription and note generation all run on your Mac. The app makes no network requests of its own; macOS may download Apple's speech model for a language the first time you use it.</p></details>
-        <details><summary>Does it join my Zoom, Google Meet or Teams call as a bot?</summary><p>No. It records your Mac's microphone and system audio, so it works with any call app and other participants see nothing new.</p></details>
-        <details><summary>Do I need Apple Intelligence?</summary><p>No. With Apple Intelligence on and a supported language, Apple's on-device model writes the notes. Otherwise a local rule-based extractor is used.</p></details>
-        <details><summary>Which languages can it transcribe?</summary><p>Every language Apple's on-device speech recognition supports on your Mac. The interface is in English and Turkish.</p></details>
-        <details><summary>Why macOS 26 and Apple silicon only?</summary><p>The on-device transcription engine, SpeechAnalyzer, was introduced in macOS 26.</p></details>
-        <details><summary>Why isn't there a downloadable app?</summary><p>Offrecord isn't notarized yet, so building from source is the simplest way to run it without security warnings. The install script makes it one command.</p></details>
-        <details><summary>Is it legal to record calls?</summary><p>Laws differ between countries and states, and many require everyone's consent. Tell people when you record and follow the rules that apply to you.</p></details>
+  <section class="sec" id="faq">
+    <div class="wrap sec-grid">
+      <div class="rail"><b>?</b>FAQ</div>
+      <div class="content">
+        <h2>Questions.</h2>
+        <div class="faq">
+          <details><summary>Does Offrecord send my recordings to the cloud?</summary><p>No. Recording, transcription and note generation all run on your Mac. The app makes no network requests of its own; macOS may download Apple's speech model for a language the first time you use it.</p></details>
+          <details><summary>Does it join my Zoom, Google Meet or Teams call as a bot?</summary><p>No. It records your Mac's microphone and system audio, so it works with any call app and other participants see nothing new.</p></details>
+          <details><summary>Do I need Apple Intelligence?</summary><p>No. With Apple Intelligence on and a supported language, Apple's on-device model writes the notes. Otherwise a local rule-based extractor is used.</p></details>
+          <details><summary>Which languages can it transcribe?</summary><p>Every language Apple's on-device speech recognition supports on your Mac. The interface is in English and Turkish.</p></details>
+          <details><summary>Why macOS 26 and Apple silicon only?</summary><p>The on-device transcription engine, SpeechAnalyzer, was introduced in macOS 26.</p></details>
+          <details><summary>Why isn't there a downloadable app?</summary><p>Offrecord isn't notarized yet, so building from source is the simplest way to run it without security warnings. The install script makes it one command.</p></details>
+          <details><summary>Is it legal to record calls?</summary><p>Laws differ between countries and states, and many require everyone's consent. Tell people when you record and follow the rules that apply to you.</p></details>
+        </div>
       </div>
     </div>
   </section>
 
-  <section style="padding-top: 16px;">
+  <section class="final">
     <div class="wrap">
-      <div class="cta">
-        <h2>Your meetings, off the record.</h2>
-        <p>Free, open source and built on Apple's own frameworks. Star the repo to follow releases, or open an issue with ideas and bugs.</p>
-        <div class="actions" style="justify-content: center;">
-          <a class="btn btn-primary" href="https://github.com/RamazanBakir/offrecord">Star on GitHub</a>
-          <a class="btn btn-ghost" href="https://github.com/RamazanBakir/offrecord/releases">Release notes</a>
-        </div>
+      <img class="mark" src="images/icon.png" width="76" height="76" alt="Offrecord app icon">
+      <h2>Keep it off the record.</h2>
+      <p>Free, open source and built on Apple's own frameworks. Star the repo to follow releases, or open an issue with ideas.</p>
+      <div class="cta-row">
+        <a class="btn btn-rec" href="#install">Install Offrecord</a>
+        <a class="btn btn-line" href="https://github.com/RamazanBakir/offrecord">Star on GitHub</a>
       </div>
     </div>
   </section>
@@ -380,9 +516,10 @@ footer a { color: var(--muted); }
 
 <footer>
   <div class="wrap">
-    <span>Offrecord · MIT License</span>
+    <a class="brand" href="#top"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><defs><clipPath id="fc"><path d="M12 3a9 9 0 0 1 0 18z"/></clipPath></defs><path d="M12 3a9 9 0 0 0 0 18z" fill="url(#lg)"/><g clip-path="url(#fc)" fill="currentColor"><rect x="13.6" y="3" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="6.95" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="10.9" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="14.85" width="10" height="2.2" rx="1.1"/><rect x="13.6" y="18.8" width="10" height="2.2" rx="1.1"/></g></svg>Offrecord · MIT License</a>
     <nav aria-label="Footer">
       <a href="https://github.com/RamazanBakir/offrecord">GitHub</a>
+      <a href="https://github.com/RamazanBakir/offrecord/releases">Releases</a>
       <a href="https://github.com/RamazanBakir/offrecord/blob/main/CHANGELOG.md">Changelog</a>
       <a href="https://github.com/RamazanBakir/offrecord/blob/main/CONTRIBUTING.md">Contributing</a>
       <a href="https://github.com/RamazanBakir/offrecord/issues">Report a problem</a>
@@ -391,15 +528,114 @@ footer a { color: var(--muted); }
 </footer>
 
 <script>
-document.querySelectorAll('.copy').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    var text = btn.getAttribute('data-copy');
-    navigator.clipboard.writeText(text).then(function () {
-      btn.textContent = 'Copied';
-      setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
-    }).catch(function () {});
+(function () {
+  var root = document.documentElement;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Theme toggle: system by default, remembered once chosen.
+  document.getElementById('theme').addEventListener('click', function () {
+    var current = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
   });
-});
+
+  // Copy buttons.
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(btn.getAttribute('data-copy')).then(function () {
+        btn.textContent = 'Copied';
+        setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+      }).catch(function () {});
+    });
+  });
+
+  // GitHub stars.
+  fetch('https://api.github.com/repos/RamazanBakir/offrecord').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (d && typeof d.stargazers_count === 'number') document.getElementById('stars').textContent = '★ ' + d.stargazers_count;
+  }).catch(function () {});
+
+  // Waveform meter.
+  var canvas = document.getElementById('wave');
+  var ctx = canvas.getContext('2d');
+  var bars = [], speaking = 1;
+  function size() {
+    var r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, r.width * dpr); canvas.height = Math.max(1, r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var n = Math.floor(r.width / 4);
+    while (bars.length < n) bars.push(0.1);
+    bars.length = n;
+  }
+  function draw() {
+    var r = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, r.width, r.height);
+    var color = getComputedStyle(root).getPropertyValue('--rec').trim() || '#ef3f37';
+    var muted = getComputedStyle(root).getPropertyValue('--muted').trim() || '#888';
+    for (var i = 0; i < bars.length; i++) {
+      var h = Math.max(2, bars[i] * r.height);
+      ctx.fillStyle = i > bars.length - 8 ? color : muted;
+      ctx.globalAlpha = i > bars.length - 8 ? 1 : 0.25 + 0.6 * (i / bars.length);
+      ctx.fillRect(i * 4, (r.height - h) / 2, 2, h);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function tick() {
+    var v = speaking ? 0.15 + Math.random() * 0.85 * (0.5 + 0.5 * Math.sin(Date.now() / 180)) : 0.05 + Math.random() * 0.08;
+    bars.push(v); bars.shift(); draw();
+  }
+  size(); for (var i = 0; i < bars.length; i++) tick();
+  window.addEventListener('resize', function () { size(); draw(); });
+
+  // Timer.
+  var seconds = 28 * 60 + 31, timeEl = document.getElementById('demo-time');
+  function fmt(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+
+  if (reduced) return;
+  setInterval(tick, 70);
+  setInterval(function () { seconds++; timeEl.textContent = fmt(seconds); }, 1000);
+
+  // Transcript → notes loop.
+  var transcript = document.getElementById('transcript');
+  var lines = Array.prototype.map.call(transcript.querySelectorAll('.line'), function (el) {
+    return { cls: el.className, who: el.querySelector('.who').innerHTML, text: el.querySelector('.txt').textContent };
+  });
+  var blocks = document.querySelectorAll('#notes .block');
+  var gen = document.querySelector('#notes .gen');
+  var notesEl = document.getElementById('notes');
+
+  function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+  async function run() {
+    while (true) {
+      transcript.innerHTML = '';
+      blocks.forEach(function (b) { b.classList.add('pending'); });
+      notesEl.classList.add('listening');
+      gen.style.opacity = 0;
+      for (var i = 0; i < lines.length; i++) {
+        speaking = 1;
+        var el = document.createElement('div');
+        el.className = lines[i].cls;
+        el.innerHTML = '<span class="who">' + lines[i].who + '</span><span class="txt"></span>';
+        transcript.appendChild(el);
+        var txt = el.querySelector('.txt'), words = lines[i].text.split(' ');
+        for (var w = 0; w < words.length; w++) {
+          txt.innerHTML = words.slice(0, w + 1).join(' ') + '<span class="caret"></span>';
+          await wait(110 + Math.random() * 90);
+        }
+        txt.textContent = lines[i].text;
+        speaking = 0;
+        await wait(500);
+      }
+      await wait(500);
+      notesEl.classList.remove('listening');
+      await wait(60);
+      for (var b = 0; b < blocks.length; b++) { blocks[b].classList.remove('pending'); await wait(450); }
+      gen.style.opacity = 1;
+      await wait(5200);
+    }
+  }
+  run();
+})();
 </script>
 </body>
 </html>
