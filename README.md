@@ -8,6 +8,7 @@ An open-source, local-first meeting recorder and AI note taker for macOS.
 Captures your calls and meetings, transcribes them on-device and turns them into
 summaries, decisions and to-dos. Your audio never leaves your Mac.
 
+[![Release](https://img.shields.io/github/v/release/RamazanBakir/offrecord?color=black)](https://github.com/RamazanBakir/offrecord/releases)
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-black?logo=apple)
 ![Apple silicon](https://img.shields.io/badge/Apple%20silicon-M1%2B-black)
 ![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
@@ -116,9 +117,13 @@ Because you build the app yourself, Gatekeeper shows no "unidentified developer"
 |---|---|
 | Update | `git pull && ./scripts/install.sh` |
 | Uninstall | `./scripts/uninstall.sh` (add `--purge` to remove the certificate too) |
+| Install a specific version | `git checkout v0.1.0 && ./scripts/install.sh` |
 | Build only | `./scripts/build-app.sh` → `build/Offrecord.app` |
 
 Your recordings in `~/Documents/Offrecord` are never touched by uninstalling.
+
+The installed version is shown in Settings › About. See [CHANGELOG.md](CHANGELOG.md)
+for what changed in each release.
 
 ### Permissions
 

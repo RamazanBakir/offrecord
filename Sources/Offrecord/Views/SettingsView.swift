@@ -80,6 +80,14 @@ struct SettingsView: View {
             Section(L("Permissions")) {
                 Button(L("Open Screen & System Audio Recording settings")) { SystemCapture.openPrivacySettings() }
             }
+            Section(L("About")) {
+                LabeledContent(L("Version"), value: "\(AppInfo.version) (\(AppInfo.build))")
+                HStack {
+                    Link(L("GitHub"), destination: AppInfo.repositoryURL)
+                    Link(L("Release notes"), destination: AppInfo.releasesURL)
+                    Link(L("Report a problem"), destination: AppInfo.issuesURL)
+                }
+            }
         }
         .formStyle(.grouped)
         .frame(width: 520)

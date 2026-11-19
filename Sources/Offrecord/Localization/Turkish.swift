@@ -173,5 +173,10 @@ enum Translations {
         "Writing notes…": "Notlar çıkarılıyor…",
         "Yesterday": "Dün",
         "Zoom, Meet, Teams… System audio + microphone": "Zoom, Meet, Teams… Sistem sesi + mikrofon",
+        "About": "Hakkında",
+        "Version": "Sürüm",
+        "GitHub": "GitHub",
+        "Release notes": "Sürüm notları",
+        "Report a problem": "Sorun bildir",
     ]
 }

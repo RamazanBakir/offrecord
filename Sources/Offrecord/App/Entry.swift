@@ -7,6 +7,10 @@ import Foundation
 enum Entry {
     static func main() {
         let args = CommandLine.arguments
+        if args.contains("--version") {
+            print("Offrecord \(AppInfo.version) (\(AppInfo.build))")
+            exit(0)
+        }
         if let index = args.firstIndex(of: "--selftest"), args.count > index + 1 {
             let url = URL(filePath: args[index + 1])
             let locale = Locale(identifier: args.count > index + 2 ? args[index + 2] : "tr_TR")
