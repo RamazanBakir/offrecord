@@ -189,6 +189,10 @@ enum SessionFiles {
     static let micAudio = "mic.caf"
     static let systemAudio = "system.caf"
     static let screen = "screen.mov"
+    // Screen video is recorded in parts (pausing closes one) and assembled into screen.mov.
+    static let screenParts = "screen-parts.json"
+    static let screenPartPrefix = "screen-part-"
+    static func screenPart(_ number: Int) -> String { "\(screenPartPrefix)\(number).mov" }
 }
 
 extension TimeInterval {

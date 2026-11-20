@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import Observation
+@preconcurrency import ScreenCaptureKit
 
 /// Orchestrates one live session: capture -> files + live transcript -> notes.
 @MainActor
@@ -48,7 +49,10 @@ final class RecordingController {
     private var pipelines: [AudioPipeline] = []
     private var transcribers: [LiveTranscriber] = []
     private var microphone: MicrophoneCapture?
-    private var system: SystemCapture?
+    private var systemAudio: SystemAudioCapture?
+    private var screen: ScreenCapture?
+    /// Pending screen pause/resume steps, run one after another.
+    private var screenWork: Task<Void, Never>?
 
     init(store: SessionStore) {
         self.store = store
@@ -60,9 +64,10 @@ final class RecordingController {
 
     // MARK: Start
 
+    /// `screenFilter`: what to record when `options.screen` is on (see `ScreenPicker`).
     func start(
         title: String?, kind: SessionKind, options: CaptureOptions, locale: Locale,
-        attendees: [String]? = nil, othersName: String? = nil
+        screenFilter: SCContentFilter? = nil, attendees: [String]? = nil, othersName: String? = nil
     ) async {
         guard phase == .idle else { return }
         errorMessage = nil
@@ -82,7 +87,10 @@ final class RecordingController {
             guard options.microphone || options.systemAudio || options.screen else {
                 throw NSError(domain: "Offrecord", code: 1, userInfo: [NSLocalizedDescriptionKey: L("Pick at least one source (microphone, system audio or screen).")])
             }
-            if options.microphone || options.screen, !(await MicrophoneCapture.requestAccess()) {
+            if options.screen, screenFilter == nil {
+                throw CaptureError.screenTargetGone
+            }
+            if options.microphone, !(await MicrophoneCapture.requestAccess()) {
                 throw CaptureError.microphoneDenied
             }
 
@@ -129,16 +137,24 @@ final class RecordingController {
                 try mic.start()
                 microphone = mic
             }
-            if options.systemAudio || options.screen {
-                let capture = SystemCapture(onAudio: systemPipeline.map { pipeline in { @Sendable buffer in pipeline.consume(buffer) } })
+            if let systemPipeline {
+                let capture = SystemAudioCapture { systemPipeline.consume($0) }
                 capture.onError = { [weak self] error in
                     Task { @MainActor in self?.errorMessage = L("System capture stopped: %@", error.localizedDescription) }
                 }
-                try await capture.start(
-                    captureAudio: options.systemAudio,
-                    screenURL: options.screen ? record.folder.appending(path: SessionFiles.screen) : nil
-                )
-                system = capture
+                try await capture.start()
+                systemAudio = capture
+            }
+            if options.screen, let screenFilter {
+                // Video only: the cleaned-up session audio is added when the parts are assembled.
+                let capture = ScreenCapture(filter: screenFilter, folder: record.folder, sessionStart: sessionStart)
+                capture.onError = { [weak self] error in
+                    Task { @MainActor in
+                        self?.errorMessage = L("Screen recording stopped (%@). The audio keeps recording.", error.localizedDescription)
+                    }
+                }
+                screen = capture
+                try await capture.start()
             }
 
             startedAt = sessionStart
@@ -220,8 +236,37 @@ final class RecordingController {
         guard isRecording else { return }
         isPaused.toggle()
         pipelines.forEach { $0.setPaused(isPaused) }
+        let paused = isPaused
+        enqueueScreenStep { [weak self] screen in
+            if paused {
+                await screen.pause()
+            } else {
+                do {
+                    try await screen.resume()
+                } catch {
+                    self?.errorMessage = L("Couldn't continue the screen recording: %@", error.localizedDescription)
+                }
+            }
+        }
         lastSoundAt = Date()
         manualNotes.append(ManualNote(at: elapsed, text: isPaused ? L("Recording paused") : L("Recording resumed")))
+    }
+
+    /// Screen pause/resume are async; chaining them keeps quick toggles in order.
+    private func enqueueScreenStep(_ step: @escaping @MainActor (ScreenCapture) async -> Void) {
+        guard let screen else { return }
+        let previous = screenWork
+        screenWork = Task {
+            await previous?.value
+            await step(screen)
+        }
+    }
+
+    /// Stops screen capture after any pending pause/resume step.
+    private func stopScreen() async {
+        await screenWork?.value
+        screenWork = nil
+        await screen?.stop()
     }
 
     func addNote(_ text: String) {
@@ -246,7 +291,8 @@ final class RecordingController {
         phase = .finishing(L("Closing the recording…"))
 
         microphone?.stop()
-        await system?.stop()
+        await systemAudio?.stop()
+        await stopScreen()
 
         phase = .finishing(L("Transcribing the last sentences…"))
         for transcriber in transcribers { await transcriber.finish() }
@@ -263,6 +309,14 @@ final class RecordingController {
             meta.audioEnhanced = try await AudioMerger.finalize(folder: record.folder, into: record.audioURL)
         } catch {
             errorMessage = L("Couldn't merge audio; the separate files are kept in the folder: %@", error.localizedDescription)
+        }
+        if meta.options.screen {
+            phase = .finishing(L("Preparing the screen recording…"))
+            do {
+                try await ScreenRecordingAssembler.finalize(folder: record.folder, audio: record.audioURL, into: record.screenURL)
+            } catch {
+                errorMessage = L("Couldn't finish the screen recording: %@. Whatever was recorded is kept in the session folder.", error.localizedDescription)
+            }
         }
 
         phase = .finishing(L("Writing notes…"))
@@ -285,14 +339,16 @@ final class RecordingController {
         housekeeping = nil
         isPaused = false
         microphone?.stop()
-        await system?.stop()
+        await systemAudio?.stop()
+        await stopScreen()
         if discard {
             for transcriber in transcribers { await transcriber.finish() }
             pipelines.forEach { $0.finish() }
             if let record { try? FileManager.default.removeItem(at: record.folder) }
         }
         microphone = nil
-        system = nil
+        systemAudio = nil
+        screen = nil
         transcribers = []
         pipelines = []
         record = nil

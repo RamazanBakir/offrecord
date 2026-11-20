@@ -58,6 +58,13 @@ enum Entry {
                 }
                 RunLoop.main.run()
             }
+        } else if let index = args.firstIndex(of: "--screen-assembly-test"), args.count > index + 1 {
+            let url = URL(filePath: args[index + 1])
+            Task {
+                await ScreenAssemblyTest.run(directory: url)
+                exit(0)
+            }
+            RunLoop.main.run()
         } else if let index = args.firstIndex(of: "--delete-test"), args.count > index + 1 {
             let url = URL(filePath: args[index + 1])
             MainActor.assumeIsolated { Snapshot.deleteTest(outputDirectory: url) }

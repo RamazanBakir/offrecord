@@ -3,6 +3,7 @@ import AVFoundation
 import Foundation
 import UniformTypeIdentifiers
 import Observation
+@preconcurrency import ScreenCaptureKit
 import SwiftUI
 import UserNotifications
 
@@ -11,6 +12,8 @@ enum SettingsKeys {
     static let detectMeetings = "detectMeetings"
     static let recordMode = "recordMode"
     static let recordScreen = "recordScreen"
+    static let reuseLastScreen = "reuseLastScreen"
+    static let lastScreenTarget = "lastScreenTarget"
     static let useCalendar = "useCalendar"
     static let voiceProcessing = "voiceProcessing"
     static let autoStopOnCallEnd = "autoStopOnCallEnd"
@@ -41,6 +44,16 @@ final class AppModel {
     var recordScreen: Bool {
         didSet { UserDefaults.standard.set(recordScreen, forKey: SettingsKeys.recordScreen) }
     }
+    /// Record the last chosen display/window again instead of showing the picker.
+    var reuseLastScreen: Bool {
+        didSet { UserDefaults.standard.set(reuseLastScreen, forKey: SettingsKeys.reuseLastScreen) }
+    }
+    private(set) var lastScreenTarget: ScreenTarget? {
+        didSet { UserDefaults.standard.set(try? JSONEncoder().encode(lastScreenTarget), forKey: SettingsKeys.lastScreenTarget) }
+    }
+    /// True while the display/window to record is being chosen.
+    private(set) var isChoosingScreen = false
+    private let screenPicker = ScreenPicker()
 
     let detector = MeetingDetector()
     let updates = UpdateChecker()
@@ -57,6 +70,9 @@ final class AppModel {
         recorder = RecordingController(store: store)
         mode = RecordMode(rawValue: UserDefaults.standard.string(forKey: SettingsKeys.recordMode) ?? "") ?? .computer
         recordScreen = UserDefaults.standard.bool(forKey: SettingsKeys.recordScreen)
+        reuseLastScreen = UserDefaults.standard.bool(forKey: SettingsKeys.reuseLastScreen)
+        lastScreenTarget = UserDefaults.standard.data(forKey: SettingsKeys.lastScreenTarget)
+            .flatMap { try? JSONDecoder().decode(ScreenTarget.self, from: $0) }
     }
 
     var showTasks = false
@@ -70,6 +86,7 @@ final class AppModel {
             for record in pending {
                 var meta = record.meta
                 meta.audioEnhanced = (try? await AudioMerger.finalize(folder: record.folder, into: record.audioURL)) ?? false
+                try? await ScreenRecordingAssembler.finalize(folder: record.folder, audio: record.audioURL, into: record.screenURL)
                 if let seconds = try? await AVURLAsset(url: record.audioURL).load(.duration).seconds, seconds.isFinite {
                     meta.duration = seconds
                 }
@@ -110,13 +127,13 @@ final class AppModel {
 
     /// Starts a recording with the current choices (or an explicit mode from the menu bar).
     func start(_ requested: RecordMode? = nil) {
-        guard !recorder.isActive else { return }
+        guard !recorder.isActive, !isChoosingScreen else { return }
         if let requested { mode = requested }
         let (kind, options) = mode.options(recordScreen: recordScreen)
         selectedSessionID = nil
 
         // Check permissions up front so the user gets clear guidance instead of a failed start.
-        if options.microphone || options.screen {
+        if options.microphone {
             let status = AVCaptureDevice.authorizationStatus(for: .audio)
             if status == .denied || status == .restricted {
                 permissionIssue = .microphone
@@ -132,7 +149,16 @@ final class AppModel {
         permissionIssue = nil
         let useCalendar = UserDefaults.standard.bool(forKey: SettingsKeys.useCalendar)
         let callApp = detector.activeApps.first
+        // Set before the task so a second press cannot open another picker.
+        isChoosingScreen = options.screen
         Task {
+            var screenFilter: SCContentFilter?
+            if options.screen {
+                let filter = await chooseScreen()
+                isChoosingScreen = false
+                guard let filter else { return }
+                screenFilter = filter
+            }
             let event = useCalendar ? await CalendarLookup.currentEvent() : nil
             // Without a calendar event, name it after the call app ("WhatsApp call").
             let fallbackTitle = callApp.map {
@@ -140,10 +166,23 @@ final class AppModel {
             }
             await recorder.start(
                 title: event?.title ?? fallbackTitle, kind: kind, options: options, locale: locale,
-                attendees: event?.attendees, othersName: event?.otherPerson
+                screenFilter: screenFilter, attendees: event?.attendees, othersName: event?.otherPerson
             )
             detector.recordingStarted()
         }
+    }
+
+    /// What to record on screen: the last display/window when the user chose to reuse
+    /// it and it is still there, otherwise whatever they pick now. Nil when cancelled.
+    private func chooseScreen() async -> SCContentFilter? {
+        if reuseLastScreen, let last = lastScreenTarget, let filter = try? await last.makeFilter() {
+            return filter
+        }
+        guard let picked = await screenPicker.choose() else { return nil }
+        guard let target = ScreenTarget(picked) else { return picked }
+        lastScreenTarget = target
+        // Rebuilt so Offrecord's own windows stay out of a full-screen recording.
+        return (try? await target.makeFilter()) ?? picked
     }
 
     /// Restarts the app (macOS applies a new Screen Recording permission only after a relaunch).

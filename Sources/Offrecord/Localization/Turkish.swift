@@ -4,6 +4,17 @@
 enum Translations {
     static let turkish: [String: String] = [
         "Language": "Dil",
+        "Choose when recording starts": "Kayıt başlarken seç",
+        "Couldn't continue the screen recording: %@": "Ekran kaydı sürdürülemedi: %@",
+        "Couldn't finish the screen recording: %@. Whatever was recorded is kept in the session folder.": "Ekran kaydı tamamlanamadı: %@. Kaydedilen her şey kayıt klasöründe duruyor.",
+        "Display": "Ekran",
+        "Entire screen: %@": "Tüm ekran: %@",
+        "No readable screen video was recorded.": "Okunabilir ekran videosu kaydedilmedi.",
+        "Preparing the screen recording…": "Ekran kaydı hazırlanıyor…",
+        "Screen recording stopped (%@). The audio keeps recording.": "Ekran kaydı durdu (%@). Ses kaydı devam ediyor.",
+        "The screen or window to record is no longer available.": "Kaydedilecek ekran ya da pencere artık yok.",
+        "The video could not be written.": "Video yazılamadı.",
+        "Window: %@": "Pencere: %@",
         "stop": "bitir",
         "Restart now": "Şimdi yeniden başlat",
         "Some macOS menus switch after a restart.": "macOS menülerinin bir kısmı yeniden başlatınca değişir.",

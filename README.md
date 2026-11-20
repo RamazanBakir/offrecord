@@ -43,7 +43,8 @@ Fireflies, Fathom or Granola.
 ## Features
 
 - 🎙️ **One-click recording** of your microphone and the other side of the call
-  (system audio), with optional screen recording.
+  (system audio), with optional screen recording of a whole display or a single
+  window.
 - ✍️ **Live transcription on-device** with speaker labels (*Me* / *Them*) and
   dozens of languages, including Turkish.
 - 🧠 **Automatic meeting notes**: summary, key topics, decisions, action items and
@@ -162,10 +163,15 @@ permission error, macOS kept a stale grant: run
 ## Usage
 
 1. Pick **Online meeting / call** (your mic + system audio) or **In person** (mic only).
-   Tick **Also record the screen** if you want a video.
+   Tick **Also record the screen** if you want a video. When you start, macOS asks
+   which display or window to record; next to the checkbox you can choose to reuse the
+   last choice instead.
 2. Press the record button, ⌃⌥R anywhere, or click the menu bar icon.
 3. Type notes or press ⌘B to mark an important moment while you talk.
 4. Press **Stop**. The summary, decisions and to-dos are ready a few seconds later.
+
+Pausing pauses the screen video too, and the video uses the same echo-cancelled
+audio as `audio.m4a`.
 
 You can also transcribe an existing audio or video file with ⌘O.
 
@@ -197,7 +203,7 @@ Each meeting is saved to `~/Documents/Offrecord/<date> <title>/`
 
 ```
 audio.m4a          mixed, level-balanced audio
-screen.mov         screen recording (optional)
+screen.mov         screen recording with the same audio (optional)
 notes.md           summary, decisions, action items, questions, your notes, transcript
 notes.json         structured notes
 transcript.json    timestamped transcript with speakers
@@ -270,7 +276,8 @@ Releases are published with `./scripts/release.sh X.Y.Z` (see [CONTRIBUTING.md](
 
 The app binary also has headless checks used during development: `--check-update`,
 `--selftest <audio> [locale]` (transcription and notes), `--detector-test`
-(call detection timeline), `--enhance-test`, `--recovery-test` and
+(call detection timeline), `--enhance-test`, `--recovery-test`,
+`--screen-assembly-test <dir>` (screen video + audio assembly) and
 `--showcase <dir> -storagePath <empty-dir>` (regenerates the screenshots in this README).
 
 ## Contributing

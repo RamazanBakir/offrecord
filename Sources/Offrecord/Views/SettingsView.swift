@@ -78,7 +78,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section(L("Permissions")) {
-                Button(L("Open Screen & System Audio Recording settings")) { SystemCapture.openPrivacySettings() }
+                Button(L("Open Screen & System Audio Recording settings")) { SystemAudioCapture.openPrivacySettings() }
             }
             Section(L("About")) {
                 LabeledContent(L("Version"), value: "\(AppInfo.version) (\(AppInfo.build))")

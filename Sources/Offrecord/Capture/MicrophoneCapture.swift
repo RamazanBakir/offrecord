@@ -85,6 +85,7 @@ enum CaptureError: LocalizedError {
     case noMicrophone
     case microphoneDenied
     case noDisplay
+    case screenTargetGone
     case screenPermission(Error)
 
     var errorDescription: String? {
@@ -92,6 +93,7 @@ enum CaptureError: LocalizedError {
         case .noMicrophone: L("No microphone found.")
         case .microphoneDenied: L("No microphone permission. Allow Offrecord in System Settings › Privacy & Security › Microphone.")
         case .noDisplay: L("No display to record.")
+        case .screenTargetGone: L("The screen or window to record is no longer available.")
         case .screenPermission(let error):
             L("Permission needed for system audio / screen. Allow Offrecord in System Settings › Privacy & Security › Screen & System Audio Recording, then restart the app. (%@)", error.localizedDescription)
         }

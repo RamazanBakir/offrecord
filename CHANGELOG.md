@@ -14,6 +14,19 @@ All notable changes to Offrecord are documented here. The format follows
 - New app icon and logo.
 - Project website: https://ramazanbakir.github.io/offrecord/
 - `scripts/release.sh` to publish a release in one command.
+- Choose what to record on screen: macOS's own picker opens when a screen recording
+  starts, so you can pick any display (multi-monitor setups) or a single window.
+  Offrecord can reuse the last choice, and its own windows stay out of the video.
+
+### Fixed
+
+- The screen recording no longer echoes the other side of the call: its audio is now
+  the same echo-cancelled, level-balanced mix as `audio.m4a` instead of the raw microphone.
+- Pausing now pauses the screen video too (it used to keep recording the screen).
+- System audio is recorded separately from the video, so recording a single window
+  never cuts the other side of the call.
+- If the recorded window closes or the display is disconnected, the audio keeps
+  recording and Offrecord tells you the video stopped.
 
 ## [0.1.0] - 2026-11-20
 

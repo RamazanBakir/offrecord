@@ -29,7 +29,7 @@ struct ContentView: View {
             set: { if !$0 { model.recorder.errorMessage = nil } }
         )) {
             if model.recorder.errorMessage?.contains(L("Screen & System Audio Recording")) == true {
-                Button(L("Open Settings")) { SystemCapture.openPrivacySettings() }
+                Button(L("Open Settings")) { SystemAudioCapture.openPrivacySettings() }
             }
             Button(L("OK"), role: .cancel) {}
         } message: {
@@ -247,8 +247,19 @@ struct StartView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                Toggle(L("Also record the screen"), isOn: $model.recordScreen)
-                    .toggleStyle(.checkbox)
+                HStack(spacing: 8) {
+                    Toggle(L("Also record the screen"), isOn: $model.recordScreen)
+                        .toggleStyle(.checkbox)
+                    if model.recordScreen, let last = model.lastScreenTarget {
+                        Picker("", selection: $model.reuseLastScreen) {
+                            Text(L("Choose when recording starts")).tag(false)
+                            Text(last.label).tag(true)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .fixedSize()
+                    }
+                }
             }
 
             if let issue = model.permissionIssue {
