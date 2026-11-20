@@ -4,6 +4,10 @@
 enum Translations {
     static let turkish: [String: String] = [
         "Language": "Dil",
+        "Automatic (%@)": "Otomatik (%@)",
+        "Detecting the language…": "Dil algılanıyor…",
+        "Other languages": "Diğer diller",
+        "Transcribe again": "Yeniden yazıya dök",
         "Choose when recording starts": "Kayıt başlarken seç",
         "Couldn't continue the screen recording: %@": "Ekran kaydı sürdürülemedi: %@",
         "Couldn't finish the screen recording: %@. Whatever was recorded is kept in the session folder.": "Ekran kaydı tamamlanamadı: %@. Kaydedilen her şey kayıt klasöründe duruyor.",

@@ -18,8 +18,19 @@ All notable changes to Offrecord are documented here. The format follows
   starts, so you can pick any display (multi-monitor setups) or a single window.
   Offrecord can reuse the last choice, and its own windows stay out of the video.
 
+- Automatic language detection (new default): the first sentences are transcribed in
+  your system language and in English and the clearly better one is kept, separately
+  for you and the other side. A language menu is on the start screen too.
+- **Transcribe again** menu on every recording: detect the language or pick one, to
+  fix recordings made in the wrong language. Speaker labels are kept for calls.
+
 ### Fixed
 
+- Meetings in English were transcribed with the Turkish model (and vice versa) when
+  the language setting didn't match, producing nonsense. If your language was set to
+  your system language, it switches to automatic detection once.
+- On speakers, the other side's words were transcribed twice (also as "Me") because
+  the call leaked into the microphone. Those echo lines are now removed.
 - The screen recording no longer echoes the other side of the call: its audio is now
   the same echo-cancelled, level-balanced mix as `audio.m4a` instead of the raw microphone.
 - Pausing now pauses the screen video too (it used to keep recording the screen).

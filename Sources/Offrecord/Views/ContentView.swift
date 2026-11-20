@@ -247,6 +247,10 @@ struct StartView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
+                SpeechLanguagePicker(title: L("Language"), selection: $model.speechLanguage)
+                    .pickerStyle(.menu)
+                    .fixedSize()
+
                 HStack(spacing: 8) {
                     Toggle(L("Also record the screen"), isOn: $model.recordScreen)
                         .toggleStyle(.checkbox)

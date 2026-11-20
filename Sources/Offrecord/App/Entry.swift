@@ -1,7 +1,7 @@
 @preconcurrency import AVFoundation
 import Foundation
 
-/// Entry point. `--selftest <audio-file> [locale]` runs the transcription and
+/// Entry point. `--selftest <audio-file> [locale|auto]` runs the transcription and
 /// note pipeline headless (file mode and simulated live mode) and prints the result.
 @main
 enum Entry {
@@ -24,9 +24,9 @@ enum Entry {
         }
         if let index = args.firstIndex(of: "--selftest"), args.count > index + 1 {
             let url = URL(filePath: args[index + 1])
-            let locale = Locale(identifier: args.count > index + 2 ? args[index + 2] : "tr_TR")
+            let language = SpeechLanguage(identifier: args.count > index + 2 ? args[index + 2] : SpeechLanguage.automaticIdentifier)
             Task {
-                await SelfTest.run(url: url, locale: locale)
+                await SelfTest.run(url: url, language: language)
                 exit(0)
             }
             RunLoop.main.run()
@@ -37,6 +37,9 @@ enum Entry {
                 exit(0)
             }
             RunLoop.main.run()
+        } else if args.contains("--transcript-test") {
+            MainActor.assumeIsolated { TranscriptCleanupTest.run() }
+            exit(0)
         } else if args.contains("--detector-test") {
             MainActor.assumeIsolated { DetectorTest.run() }
             exit(0)
@@ -85,11 +88,14 @@ enum Entry {
 }
 
 enum SelfTest {
-    static func run(url: URL, locale: Locale) async {
-        print("== File transcription (\(locale.identifier))")
+    static func run(url: URL, language: SpeechLanguage) async {
+        print("== File transcription (\(language.identifier))")
+        var locale = language.candidates[0]
         do {
-            let segments = try await FileTranscriber.transcribe(url: url, locale: locale) { print("  ..", $0) }
-            segments.forEach { print("  [\($0.start.clockString)] \($0.text)") }
+            let result = try await FileTranscriber.transcribe(url: url, language: language) { print("  ..", $0) }
+            locale = result.locale
+            print("  language:", locale.identifier)
+            result.segments.forEach { print("  [\($0.start.clockString)] \($0.text)") }
         } catch {
             print("  FAILED:", error.localizedDescription)
         }
@@ -100,9 +106,10 @@ enum SelfTest {
             let output = FileManager.default.temporaryDirectory.appending(path: "offrecord-selftest.caf")
             try? FileManager.default.removeItem(at: output)
             let pipeline = AudioPipeline(speaker: .room, fileURL: output)
-            let transcriber = try await LiveTranscriber.start(speaker: .room, locale: locale, farField: false) { _, chunk in
+            let transcriber = try await LanguageDetectingTranscriber.start(speaker: .room, languages: language.candidates, farField: false) { [locale] _, chunk in
                 guard chunk.isFinal else { return }
-                for segment in SentenceBuilder.segments(from: chunk, speaker: .room, locale: locale) {
+                if let detected = chunk.locale { collected.setLocale(detected) }
+                for segment in SentenceBuilder.segments(from: chunk, speaker: .room, locale: chunk.locale ?? locale) {
                     collected.append(segment)
                 }
             }
@@ -118,6 +125,7 @@ enum SelfTest {
             }
             await transcriber.finish()
             pipeline.finish()
+            print("  language:", collected.locale?.identifier ?? "-")
             collected.segments.forEach { print("  [\($0.start.clockString)] \($0.text)") }
             let written = try AVAudioFile(forReading: output)
             print("  wrote \(output.lastPathComponent): \(Double(written.length) / written.fileFormat.sampleRate)s")
@@ -153,6 +161,9 @@ enum SelfTest {
 private final class Collected: @unchecked Sendable {
     private let lock = NSLock()
     private var storage: [TranscriptSegment] = []
+    private var detectedLocale: Locale?
     var segments: [TranscriptSegment] { lock.withLock { storage } }
+    var locale: Locale? { lock.withLock { detectedLocale } }
     func append(_ segment: TranscriptSegment) { lock.withLock { storage.append(segment) } }
+    func setLocale(_ locale: Locale) { lock.withLock { detectedLocale = locale } }
 }

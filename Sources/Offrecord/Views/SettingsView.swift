@@ -4,9 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(SettingsKeys.detectMeetings) private var detectMeetings = true
-    @AppStorage(SettingsKeys.localeIdentifier) private var localeID = SettingsKeys.defaultSpeechLocale
     @AppStorage(SessionStore.storagePathKey) private var storagePath = ""
-    @State private var locales: [Locale] = []
     @AppStorage(SettingsKeys.useCalendar) private var useCalendar = true
     @AppStorage(SettingsKeys.autoStopOnCallEnd) private var autoStop = true
     @AppStorage(SettingsKeys.voiceProcessing) private var voiceProcessing = true
@@ -24,6 +22,7 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        @Bindable var model = model
         Form {
             Section {
                 Picker(L("Language"), selection: $localizer.language) {
@@ -40,10 +39,7 @@ struct SettingsView: View {
                 }
             }
             Section(L("Recording")) {
-                Picker(L("Transcription language"), selection: $localeID) {
-                    if locales.isEmpty { Text(TranscriberModule.displayName(Locale(identifier: localeID))).tag(localeID) }
-                    ForEach(locales, id: \.identifier) { Text(TranscriberModule.displayName($0)).tag($0.identifier) }
-                }
+                SpeechLanguagePicker(title: L("Transcription language"), selection: $model.speechLanguage)
                 Toggle(L("Suggest recording when another app uses the microphone"), isOn: $detectMeetings)
                 Toggle(L("Stop recording automatically when the call ends"), isOn: $autoStop)
                 Toggle(L("Improve my voice in calls (echo, noise, automatic level)"), isOn: $voiceProcessing)
@@ -72,7 +68,7 @@ struct SettingsView: View {
                 }
             }
             Section(L("Notes")) {
-                LabeledContent(L("Engine"), value: NoteGenerator.engineDescription(for: Locale(identifier: localeID)))
+                LabeledContent(L("Engine"), value: NoteGenerator.engineDescription(for: model.speechLanguage.candidates[0]))
                 Text(L("If Apple Intelligence is on and supports the language, it writes the notes on-device. Otherwise local rule-based extraction is used. No data leaves this Mac."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -100,7 +96,6 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 520)
-        .task { locales = await TranscriberModule.availableLocales() }
     }
 
     @ViewBuilder

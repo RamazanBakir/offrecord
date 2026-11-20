@@ -47,7 +47,9 @@ final class RecordingController {
     private let store: SessionStore
     private var record: SessionRecord?
     private var pipelines: [AudioPipeline] = []
-    private var transcribers: [LiveTranscriber] = []
+    private var transcribers: [any LiveTranscribing] = []
+    /// Transcribed characters per language, to tell which language the session is in.
+    private var languageCharacters: [String: Int] = [:]
     private var microphone: MicrophoneCapture?
     private var systemAudio: SystemAudioCapture?
     private var screen: ScreenCapture?
@@ -66,7 +68,7 @@ final class RecordingController {
 
     /// `screenFilter`: what to record when `options.screen` is on (see `ScreenPicker`).
     func start(
-        title: String?, kind: SessionKind, options: CaptureOptions, locale: Locale,
+        title: String?, kind: SessionKind, options: CaptureOptions, language: SpeechLanguage,
         screenFilter: SCContentFilter? = nil, attendees: [String]? = nil, othersName: String? = nil
     ) async {
         guard phase == .idle else { return }
@@ -81,6 +83,7 @@ final class RecordingController {
         silencePrompted = false
         lastSoundAt = Date()
         lastRemoteSoundAt = Date()
+        languageCharacters = [:]
         phase = .preparing(L("Checking permissions…"))
 
         do {
@@ -99,7 +102,8 @@ final class RecordingController {
                 ?? "\(kind.title) – \(now.formatted(.dateTime.locale(AppLanguage.current.locale).day().month(.abbreviated).hour().minute()))"
             let meta = SessionMeta(
                 id: UUID(), title: resolvedTitle, kind: kind, startedAt: now, duration: 0,
-                options: options, localeIdentifier: locale.identifier,
+                // Refined to the detected language while recording (see `updateSessionLanguage`).
+                options: options, localeIdentifier: language.candidates[0].identifier,
                 isComplete: false, attendees: attendees, othersName: othersName
             )
             let record = try store.createFolder(for: meta)
@@ -123,7 +127,7 @@ final class RecordingController {
 
             // Live transcription (best effort: recording still works if it fails).
             if options.transcribe, !pipelines.isEmpty {
-                await startTranscribers(locale: locale, farField: kind == .inPerson)
+                await startTranscribers(language: language, farField: kind == .inPerson)
             }
 
             phase = .preparing(L("Starting recording…"))
@@ -166,7 +170,7 @@ final class RecordingController {
         }
     }
 
-    private func startTranscribers(locale: Locale, farField: Bool) async {
+    private func startTranscribers(language: SpeechLanguage, farField: Bool) async {
         guard await TranscriberModule.requestAuthorization() else {
             liveTranscriptionWarning = TranscriptionError.notAuthorized.localizedDescription
             return
@@ -174,9 +178,10 @@ final class RecordingController {
         phase = .preparing(L("Preparing the language model (may download the first time)…"))
         for pipeline in pipelines {
             do {
-                let transcriber = try await LiveTranscriber.start(
+                // Each side detects its own language: the two people may speak different ones.
+                let transcriber = try await LanguageDetectingTranscriber.start(
                     speaker: pipeline.speaker,
-                    locale: locale,
+                    languages: language.candidates,
                     farField: farField || pipeline.speaker == .room
                 ) { [weak self] speaker, chunk in
                     Task { @MainActor in self?.handle(chunk, from: speaker) }
@@ -193,14 +198,34 @@ final class RecordingController {
         let text = chunk.text.trimmingCharacters(in: .whitespacesAndNewlines)
         if chunk.isFinal {
             volatileText[speaker] = nil
-            let locale = Locale(identifier: meta?.localeIdentifier ?? SettingsKeys.defaultSpeechLocale)
+            let locale = chunk.locale ?? Locale(identifier: meta?.localeIdentifier ?? SettingsKeys.defaultSpeechLocale)
+            languageCharacters[locale.identifier, default: 0] += text.count
             for segment in SentenceBuilder.segments(from: chunk, speaker: speaker, locale: locale) {
-                let index = segments.firstIndex { $0.start > segment.start } ?? segments.endIndex
-                segments.insert(segment, at: index)
+                insert(segment)
             }
         } else {
             volatileText[speaker] = text.isEmpty ? nil : text
         }
+    }
+
+    /// Adds a final line in time order, skipping microphone lines that echo the other side.
+    private func insert(_ segment: TranscriptSegment) {
+        if segment.speaker == .me, segments.contains(where: { EchoFilter.isEcho(segment, of: $0) }) { return }
+        if segment.speaker == .others { segments.removeAll { EchoFilter.isEcho($0, of: segment) } }
+        let index = segments.firstIndex { $0.start > segment.start } ?? segments.endIndex
+        segments.insert(segment, at: index)
+    }
+
+    /// Stores the language most of the transcript is in, so notes (and crash
+    /// recovery) use the detected language. Returns the updated metadata.
+    @discardableResult
+    private func updateSessionLanguage() -> SessionMeta? {
+        guard var meta, let dominant = languageCharacters.max(by: { $0.value < $1.value })?.key,
+              dominant != meta.localeIdentifier else { return self.meta }
+        meta.localeIdentifier = dominant
+        self.meta = meta
+        if let record { try? store.save(meta: meta, in: record) }
+        return meta
     }
 
     // MARK: During recording
@@ -224,6 +249,7 @@ final class RecordingController {
                 guard let self, self.isRecording, let record = self.record else { continue }
                 try? self.store.save(transcript: self.segments, in: record)
                 try? self.store.save(manualNotes: self.manualNotes, in: record)
+                self.updateSessionLanguage()
                 if !self.isPaused, !self.silencePrompted, Date().timeIntervalSince(self.lastSoundAt) > 300 {
                     self.silencePrompted = true
                     Notifications.postSilence()
@@ -302,6 +328,8 @@ final class RecordingController {
             segments.append(TranscriptSegment(speaker: speaker, start: meta.duration, end: meta.duration, text: text))
         }
         volatileText = [:]
+        segments = EchoFilter.removingEchoes(from: segments)
+        if let detected = updateSessionLanguage()?.localeIdentifier { meta.localeIdentifier = detected }
         pipelines.forEach { $0.finish() }
 
         phase = .finishing(L("Balancing audio levels…"))

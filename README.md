@@ -46,7 +46,8 @@ Fireflies, Fathom or Granola.
   (system audio), with optional screen recording of a whole display or a single
   window.
 - ✍️ **Live transcription on-device** with speaker labels (*Me* / *Them*) and
-  dozens of languages, including Turkish.
+  dozens of languages, including Turkish. Detects the language automatically
+  (your system language or English), separately for you and the other side.
 - 🧠 **Automatic meeting notes**: summary, key topics, decisions, action items and
   open questions. Uses Apple Intelligence when available, local rules otherwise.
 - ✅ **To-do list** that collects action items from every recording, with checkboxes.
@@ -193,6 +194,8 @@ You can also transcribe an existing audio or video file with ⌘O.
 | Capture | `AVAudioEngine` with Apple voice processing for the microphone, `ScreenCaptureKit` for system audio and screen |
 | Storage while recording | 24 kHz PCM CAF files that stay readable even after a crash |
 | Transcription | `SpeechAnalyzer` (`SpeechTranscriber`, or `DictationTranscriber` for languages it lacks, such as Turkish); mic and system audio are transcribed separately for speaker labels |
+| Language detection | Each candidate language's model transcribes the first sentences; the one with clearly higher word confidence is kept (wrong languages score about 0.1, the right one about 0.9) |
+| Echo removal | On speakers the call leaks into the microphone; microphone lines that repeat the other side at the same moment are dropped |
 | Sentences | Pause- and grammar-based sentence restoration for languages without punctuation output |
 | Notes | `FoundationModels` (Apple Intelligence) when enabled and the language is supported; otherwise a rule-based extractor (`NaturalLanguage`) |
 | Audio | Per-utterance level balancing, 80 Hz high-pass and a peak limiter, exported to AAC |
@@ -231,7 +234,10 @@ and follow the rules that apply to you.
 
 The interface is in **English** by default; switch to **Türkçe** in
 Settings › Language (it changes instantly). The transcription language is a
-separate setting and defaults to your system language.
+separate setting, also on the start screen. **Automatic** (the default) picks
+between your system language and English for each side of the call; choose a fixed
+language if your meetings use another one. Mixing two languages in one sentence is
+not supported by Apple's on-device models.
 
 To add an interface language, add a translation table next to
 `Sources/Offrecord/Localization/Turkish.swift`, add a case to `AppLanguage`, and run
@@ -252,8 +258,10 @@ No. With Apple Intelligence enabled (and a supported language) notes are written
 by Apple's on-device model; otherwise a local rule-based extractor is used.
 
 **Which languages can it transcribe?**
-Every language Apple's on-device speech recognition supports on your Mac. Pick one
-in Settings › Transcription language.
+Every language Apple's on-device speech recognition supports on your Mac. By default
+it detects whether a meeting is in your system language or English; you can pick a
+fixed language on the start screen or in Settings. A finished recording can be
+transcribed again in another language from its **Transcribe again** menu.
 
 **Why macOS 26 only?**
 The on-device transcription engine (`SpeechAnalyzer`) was introduced in macOS 26.
@@ -275,7 +283,8 @@ build/Offrecord.app/Contents/MacOS/Offrecord --snapshot /tmp/shots   # render sc
 Releases are published with `./scripts/release.sh X.Y.Z` (see [CONTRIBUTING.md](CONTRIBUTING.md#releasing-maintainers)).
 
 The app binary also has headless checks used during development: `--check-update`,
-`--selftest <audio> [locale]` (transcription and notes), `--detector-test`
+`--selftest <audio> [locale|auto]` (transcription, language detection and notes),
+`--transcript-test` (echo removal, speakers, language decision), `--detector-test`
 (call detection timeline), `--enhance-test`, `--recovery-test`,
 `--screen-assembly-test <dir>` (screen video + audio assembly) and
 `--showcase <dir> -storagePath <empty-dir>` (regenerates the screenshots in this README).

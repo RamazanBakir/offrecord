@@ -90,7 +90,7 @@ final class AudioPipeline: @unchecked Sendable {
     )!
     private let converter: FormatConverter
     private let writer: AudioFileWriter
-    private var transcriber: LiveTranscriber?
+    private var transcriber: (any LiveTranscribing)?
     private var sessionStart: Date?
     private var framesWritten: AVAudioFramePosition = 0
     private var finished = false
@@ -110,7 +110,7 @@ final class AudioPipeline: @unchecked Sendable {
         self.writer = AudioFileWriter(url: fileURL)
     }
 
-    func attach(transcriber: LiveTranscriber?) {
+    func attach(transcriber: (any LiveTranscribing)?) {
         lock.withLock { self.transcriber = transcriber }
     }
 

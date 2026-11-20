@@ -30,12 +30,26 @@ struct TranscriptionChunk: Sendable {
     var range: CMTimeRange
     var isFinal: Bool
     var words: [Word] = []
+    /// Language of the model that produced the text.
+    var locale: Locale?
+    /// Model confidence (0...1) averaged over the characters that carry one; final results only.
+    var confidence: Double?
+    var scoredCharacters = 0
 
-    init(text: AttributedString, range: CMTimeRange, isFinal: Bool) {
+    init(text: AttributedString, range: CMTimeRange, isFinal: Bool, locale: Locale? = nil) {
         self.text = String(text.characters)
         self.range = range
         self.isFinal = isFinal
+        self.locale = locale
         guard isFinal else { return }
+        var weighted = 0.0
+        for (confidence, runRange) in text.runs[\.transcriptionConfidence] {
+            guard let confidence else { continue }
+            let count = text[runRange].characters.filter { !$0.isWhitespace }.count
+            weighted += confidence * Double(count)
+            scoredCharacters += count
+        }
+        if scoredCharacters > 0 { confidence = weighted / Double(scoredCharacters) }
         // Word-level timing from the audioTimeRange attribute runs.
         // Runs are sub-word pieces ("1", "5" or "kararlaştırdı", "k"); a new word
         // starts only after whitespace.
@@ -79,6 +93,13 @@ enum TranscriberModule {
         }
     }
 
+    var locale: Locale? {
+        switch self {
+        case .speech(let t): t.selectedLocales.first
+        case .dictation(let t): t.selectedLocales.first
+        }
+    }
+
     static func make(locale: Locale, farField: Bool) async throws -> TranscriberModule {
         // supportedLocale(equivalentTo:) can return a locale that is not actually
         // supported, so always match against the explicit supported list.
@@ -87,7 +108,7 @@ enum TranscriberModule {
                 locale: match,
                 transcriptionOptions: [],
                 reportingOptions: [.volatileResults],
-                attributeOptions: [.audioTimeRange]
+                attributeOptions: [.audioTimeRange, .transcriptionConfidence]
             ))
         }
         if let match = bestMatch(for: locale, in: await DictationTranscriber.supportedLocales) {
@@ -96,7 +117,7 @@ enum TranscriberModule {
                 contentHints: farField ? [.farField] : [],
                 transcriptionOptions: [.punctuation],
                 reportingOptions: [.volatileResults, .frequentFinalization],
-                attributeOptions: [.audioTimeRange]
+                attributeOptions: [.audioTimeRange, .transcriptionConfidence]
             ))
         }
         throw TranscriptionError.unsupportedLocale(locale.identifier)
@@ -124,10 +145,6 @@ enum TranscriberModule {
 
     /// Downloads the on-device model for the language the first time it is used.
     func ensureAssets() async throws {
-        let locale: Locale? = switch self {
-        case .speech(let t): t.selectedLocales.first
-        case .dictation(let t): t.selectedLocales.first
-        }
         if let locale {
             let reserved = await AssetInventory.reservedLocales
             if !reserved.contains(where: { $0.identifier(.bcp47) == locale.identifier(.bcp47) }) {
@@ -147,17 +164,18 @@ enum TranscriberModule {
     }
 
     func results() -> AsyncThrowingStream<TranscriptionChunk, Error> {
-        AsyncThrowingStream { continuation in
+        let locale = self.locale
+        return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
                     switch self {
                     case .speech(let t):
                         for try await r in t.results {
-                            continuation.yield(TranscriptionChunk(text: r.text, range: r.range, isFinal: r.isFinal))
+                            continuation.yield(TranscriptionChunk(text: r.text, range: r.range, isFinal: r.isFinal, locale: locale))
                         }
                     case .dictation(let t):
                         for try await r in t.results {
-                            continuation.yield(TranscriptionChunk(text: r.text, range: r.range, isFinal: r.isFinal))
+                            continuation.yield(TranscriptionChunk(text: r.text, range: r.range, isFinal: r.isFinal, locale: locale))
                         }
                     }
                     continuation.finish()
@@ -179,8 +197,17 @@ enum TranscriberModule {
     }
 }
 
-/// Live, streaming transcription of one audio source.
-final class LiveTranscriber: @unchecked Sendable {
+/// Something that transcribes one live audio source: a `LiveTranscriber`, or a
+/// `LanguageDetectingTranscriber` that picks the language first.
+protocol LiveTranscribing: AnyObject, Sendable {
+    /// Feeds a 48 kHz mono buffer. Called serially from the audio pipeline.
+    func feed(_ buffer: AVAudioPCMBuffer)
+    /// Flushes remaining audio and waits for the final results.
+    func finish() async
+}
+
+/// Live, streaming transcription of one audio source in one language.
+final class LiveTranscriber: LiveTranscribing, @unchecked Sendable {
     let speaker: Speaker
     private let module: TranscriberModule
     private let analyzer: SpeechAnalyzer
@@ -190,7 +217,11 @@ final class LiveTranscriber: @unchecked Sendable {
     private let inputStream: AsyncStream<AnalyzerInput>
     private var resultsTask: Task<Void, Never>?
 
-    private init(speaker: Speaker, module: TranscriberModule, format: AVAudioFormat) {
+    /// The language the model transcribes.
+    let locale: Locale
+
+    private init(speaker: Speaker, module: TranscriberModule, format: AVAudioFormat, locale: Locale) {
+        self.locale = locale
         self.speaker = speaker
         self.module = module
         self.analyzerFormat = format
@@ -213,7 +244,7 @@ final class LiveTranscriber: @unchecked Sendable {
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [module.module], considering: natural) else {
             throw TranscriptionError.unsupportedLocale(locale.identifier)
         }
-        let transcriber = LiveTranscriber(speaker: speaker, module: module, format: format)
+        let transcriber = LiveTranscriber(speaker: speaker, module: module, format: format, locale: module.locale ?? locale)
         let results = module.results()
         transcriber.resultsTask = Task.detached {
             do {
@@ -226,28 +257,39 @@ final class LiveTranscriber: @unchecked Sendable {
         return transcriber
     }
 
-    /// Feeds a 48 kHz mono buffer. Called serially from the audio pipeline.
     func feed(_ buffer: AVAudioPCMBuffer) {
         guard let converted = converter.convert(buffer) else { return }
         input.yield(AnalyzerInput(buffer: converted))
     }
 
-    /// Flushes remaining audio and waits for the final results.
     func finish() async {
         input.finish()
         try? await analyzer.finalizeAndFinishThroughEndOfInput()
         await resultsTask?.value
     }
+
+    /// Stops at once, dropping audio not analysed yet and any further results.
+    func cancel() async {
+        input.finish()
+        resultsTask?.cancel()
+        await analyzer.cancelAndFinishNow()
+    }
 }
 
 /// Transcribes a finished audio/video file (re-transcription and file import).
 enum FileTranscriber {
+    struct Result: Sendable {
+        var segments: [TranscriptSegment]
+        /// The language used: the fixed one, or the one detected.
+        var locale: Locale
+    }
+
     static func transcribe(
         url: URL,
-        locale: Locale,
+        language: SpeechLanguage,
         speaker: Speaker = .room,
         progress: (@Sendable (String) -> Void)? = nil
-    ) async throws -> [TranscriptSegment] {
+    ) async throws -> Result {
         guard await TranscriberModule.requestAuthorization() else { throw TranscriptionError.notAuthorized }
 
         var audioURL = url
@@ -262,7 +304,14 @@ enum FileTranscriber {
         defer { if let temporary { try? FileManager.default.removeItem(at: temporary) } }
 
         progress?(L("Preparing the language model…"))
-        let module = try await TranscriberModule.make(locale: locale, farField: speaker == .room)
+        let farField = speaker == .room
+        let candidates = language.candidates
+        var locale = candidates[0]
+        if candidates.count > 1 {
+            progress?(L("Detecting the language…"))
+            locale = try await LanguageDetector.detect(in: audioURL, among: candidates, farField: farField)
+        }
+        let module = try await TranscriberModule.make(locale: locale, farField: farField)
         try await module.ensureAssets()
 
         progress?(L("Transcribing…"))
@@ -280,6 +329,6 @@ enum FileTranscriber {
         } else {
             await analyzer.cancelAndFinishNow()
         }
-        return try await collector.value
+        return Result(segments: try await collector.value, locale: locale)
     }
 }

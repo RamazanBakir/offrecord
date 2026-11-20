@@ -59,8 +59,9 @@ final class AppModel {
     let updates = UpdateChecker()
     private var lastDetectionPrompt = Date.distantPast
 
-    var locale: Locale {
-        Locale(identifier: UserDefaults.standard.string(forKey: SettingsKeys.localeIdentifier) ?? SettingsKeys.defaultSpeechLocale)
+    /// Transcription language for new recordings and imports.
+    var speechLanguage: SpeechLanguage {
+        didSet { SpeechLanguage.saved = speechLanguage }
     }
 
     private init() {
@@ -70,6 +71,8 @@ final class AppModel {
         recorder = RecordingController(store: store)
         mode = RecordMode(rawValue: UserDefaults.standard.string(forKey: SettingsKeys.recordMode) ?? "") ?? .computer
         recordScreen = UserDefaults.standard.bool(forKey: SettingsKeys.recordScreen)
+        SpeechLanguage.migrateDefaultChoice()
+        speechLanguage = SpeechLanguage.saved
         reuseLastScreen = UserDefaults.standard.bool(forKey: SettingsKeys.reuseLastScreen)
         lastScreenTarget = UserDefaults.standard.data(forKey: SettingsKeys.lastScreenTarget)
             .flatMap { try? JSONDecoder().decode(ScreenTarget.self, from: $0) }
@@ -165,7 +168,7 @@ final class AppModel {
                 L("%@ call – %@", $0.name, Date().formatted(.dateTime.locale(AppLanguage.current.locale).day().month(.abbreviated).hour().minute()))
             }
             await recorder.start(
-                title: event?.title ?? fallbackTitle, kind: kind, options: options, locale: locale,
+                title: event?.title ?? fallbackTitle, kind: kind, options: options, language: speechLanguage,
                 screenFilter: screenFilter, attendees: event?.attendees, othersName: event?.otherPerson
             )
             detector.recordingStarted()
@@ -197,7 +200,7 @@ final class AppModel {
     /// Imports an existing audio/video file and transcribes it.
     func importFile(_ url: URL) {
         let access = url.startAccessingSecurityScopedResource()
-        let locale = self.locale
+        let language = speechLanguage
         importStatus = L("Preparing %@…", url.lastPathComponent)
         Task {
             defer {
@@ -206,12 +209,12 @@ final class AppModel {
             }
             do {
                 let duration = (try? await AVURLAsset(url: url).load(.duration).seconds) ?? 0
-                let meta = SessionMeta(
+                var meta = SessionMeta(
                     id: UUID(), title: url.deletingPathExtension().lastPathComponent, kind: .voiceMemo,
                     startedAt: (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .now,
                     duration: duration.isFinite ? duration : 0,
                     options: CaptureOptions(systemAudio: false, microphone: false, screen: false, transcribe: true),
-                    localeIdentifier: locale.identifier
+                    localeIdentifier: language.candidates[0].identifier
                 )
                 let record = try store.createFolder(for: meta)
                 let isVideo = UTType(filenameExtension: url.pathExtension)?.conforms(to: .movie) == true
@@ -219,11 +222,13 @@ final class AppModel {
                     try FileManager.default.copyItem(at: url, to: record.screenURL)
                 }
                 try await AudioMerger.extractAudio(from: url, to: record.audioURL)
-                let segments = try await FileTranscriber.transcribe(url: record.audioURL, locale: locale) { status in
+                let result = try await FileTranscriber.transcribe(url: record.audioURL, language: language) { status in
                     Task { @MainActor in self.importStatus = "\(url.lastPathComponent): \(status)" }
                 }
-                try store.save(transcript: segments, in: record)
-                let notes = await NoteGenerator.generate(transcript: segments, manualNotes: [], locale: locale)
+                meta.localeIdentifier = result.locale.identifier
+                try store.save(meta: meta, in: record)
+                try store.save(transcript: result.segments, in: record)
+                let notes = await NoteGenerator.generate(transcript: result.segments, manualNotes: [], locale: result.locale)
                 try store.save(notes: notes, in: record)
                 store.writeMarkdown(for: record)
                 store.reload()

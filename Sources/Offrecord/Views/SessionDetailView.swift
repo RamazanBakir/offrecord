@@ -15,6 +15,7 @@ struct SessionDetailView: View {
     @State private var busy: String?
     @State private var showTranscript = false
     @State private var copied = false
+    @State private var locales: [Locale] = []
 
     var body: some View {
         ScrollView {
@@ -51,6 +52,9 @@ struct SessionDetailView: View {
                     Label(L("Share"), systemImage: "square.and.arrow.up")
                 }
                 .help(L("Share notes via Mail, Notes, Messages…"))
+                if record.hasAudio || record.hasScreen {
+                    retranscribeMenu
+                }
                 if record.hasScreen {
                     Button {
                         NSWorkspace.shared.open(record.screenURL)
@@ -80,8 +84,32 @@ struct SessionDetailView: View {
                 .help(L("Move to Trash (⌘⌫)"))
             }
         }
-        .task { load() }
+        .task {
+            load()
+            locales = await TranscriberModule.availableLocales()
+        }
         .onDisappear { player.stop() }
+    }
+
+    /// Transcribe the recording again, detecting the language or in a chosen one.
+    private var retranscribeMenu: some View {
+        Menu {
+            let automatic = SpeechLanguage.automatic
+            Button(automatic.displayName) { retranscribe(in: automatic) }
+            Divider()
+            ForEach(automatic.candidates, id: \.identifier) { locale in
+                Button(TranscriberModule.displayName(locale)) { retranscribe(in: .fixed(locale.identifier)) }
+            }
+            Menu(L("Other languages")) {
+                ForEach(locales, id: \.identifier) { locale in
+                    Button(TranscriberModule.displayName(locale)) { retranscribe(in: .fixed(locale.identifier)) }
+                }
+            }
+        } label: {
+            Label(L("Transcribe again"), systemImage: "text.bubble")
+        }
+        .help(L("Transcribe again"))
+        .disabled(busy != nil)
     }
 
     private var header: some View {
@@ -121,7 +149,7 @@ struct SessionDetailView: View {
                 Text(L("No transcribed speech in this recording."))
                     .foregroundStyle(.secondary)
                 if record.hasAudio || record.hasScreen {
-                    Button(L("Transcribe from audio"), action: retranscribe)
+                    Button(L("Transcribe from audio")) { retranscribe(in: model.speechLanguage) }
                         .disabled(busy != nil)
                 }
             }
@@ -246,19 +274,25 @@ struct SessionDetailView: View {
         }
     }
 
-    private func retranscribe() {
+    private func retranscribe(in language: SpeechLanguage) {
         let source = record.hasAudio ? record.audioURL : record.screenURL
-        let locale = Locale(identifier: record.meta.localeIdentifier)
+        let previous = transcript
+        player.stop()
         busy = L("Preparing…")
         Task {
             do {
-                let segments = try await FileTranscriber.transcribe(url: source, locale: locale) { status in
+                let result = try await FileTranscriber.transcribe(url: source, language: language) { status in
                     Task { @MainActor in busy = status }
                 }
+                // The mixed file has no speakers; take them from the previous transcript of a call.
+                let segments = SpeakerAttribution.assign(result.segments, from: previous)
+                var meta = currentMeta
+                meta.localeIdentifier = result.locale.identifier
+                try model.store.save(meta: meta, in: record)
                 try model.store.save(transcript: segments, in: record)
                 transcript = segments
                 busy = L("Writing notes…")
-                let generated = await NoteGenerator.generate(transcript: segments, manualNotes: manualNotes, locale: locale)
+                let generated = await NoteGenerator.generate(transcript: segments, manualNotes: manualNotes, locale: result.locale)
                 try model.store.save(notes: generated, in: record)
                 model.store.writeMarkdown(for: record)
                 notes = generated
