@@ -115,7 +115,7 @@ enum ScreenAssemblyTest {
     }
 
     /// Writes a 440 Hz tone as AAC .m4a.
-    private static func writeTone(_ url: URL, seconds: Double) async throws {
+    static func writeTone(_ url: URL, seconds: Double) async throws {
         let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1)!
         let frames = AVAudioFrameCount(seconds * 48_000)
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)!

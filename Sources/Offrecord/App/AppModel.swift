@@ -188,6 +188,20 @@ final class AppModel {
         return (try? await target.makeFilter()) ?? picked
     }
 
+    /// Lets the user pick another display or window while the screen is recorded.
+    func changeScreen() {
+        guard recorder.canChangeScreen, !isChoosingScreen else { return }
+        isChoosingScreen = true
+        Task {
+            defer { isChoosingScreen = false }
+            guard let picked = await screenPicker.choose() else { return }
+            let target = ScreenTarget(picked)
+            if let target { lastScreenTarget = target }
+            let filter = (try? await target?.makeFilter()) ?? picked
+            recorder.changeScreen(to: filter, label: target?.label)
+        }
+    }
+
     /// Restarts the app (macOS applies a new Screen Recording permission only after a relaunch).
     func relaunch() {
         let configuration = NSWorkspace.OpenConfiguration()

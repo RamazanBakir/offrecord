@@ -39,6 +39,16 @@ struct RecordingView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer()
+            if recorder.canChangeScreen {
+                Button {
+                    model.changeScreen()
+                } label: {
+                    Label(L("Change screen"), systemImage: "rectangle.on.rectangle")
+                }
+                .controlSize(.large)
+                .disabled(model.isChoosingScreen)
+                .help(L("Record another display or window from now on"))
+            }
             if recorder.isRecording {
                 Button {
                     recorder.togglePause()

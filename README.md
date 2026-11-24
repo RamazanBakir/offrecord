@@ -174,7 +174,9 @@ permissions again.
 4. Press **Stop**. The summary, decisions and to-dos are ready a few seconds later.
 
 Pausing pauses the screen video too, and the video uses the same echo-cancelled
-audio as `audio.m4a`.
+audio as `audio.m4a`. To record another display or window mid-meeting, press
+**Change screen** (also in the File menu); the video continues with the new choice,
+fitted into the same frame, and the audio is not interrupted.
 
 You can also transcribe an existing audio or video file with ⌘O.
 

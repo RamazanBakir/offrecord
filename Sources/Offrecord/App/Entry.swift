@@ -68,6 +68,13 @@ enum Entry {
                 exit(0)
             }
             RunLoop.main.run()
+        } else if let index = args.firstIndex(of: "--screen-switch-test"), args.count > index + 1 {
+            let url = URL(filePath: args[index + 1])
+            Task {
+                await ScreenSwitchTest.run(directory: url)
+                exit(0)
+            }
+            RunLoop.main.run()
         } else if let index = args.firstIndex(of: "--delete-test"), args.count > index + 1 {
             let url = URL(filePath: args[index + 1])
             MainActor.assumeIsolated { Snapshot.deleteTest(outputDirectory: url) }

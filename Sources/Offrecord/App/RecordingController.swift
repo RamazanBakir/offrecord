@@ -278,7 +278,26 @@ final class RecordingController {
         manualNotes.append(ManualNote(at: elapsed, text: isPaused ? L("Recording paused") : L("Recording resumed")))
     }
 
-    /// Screen pause/resume are async; chaining them keeps quick toggles in order.
+    /// Whether the screen is being recorded, so another display or window can be chosen.
+    var canChangeScreen: Bool { isRecording && screen != nil }
+
+    /// Records another display or window from now on; the audio is not affected.
+    func changeScreen(to filter: SCContentFilter, label: String?) {
+        guard canChangeScreen else { return }
+        let paused = isPaused
+        enqueueScreenStep { [weak self] screen in
+            do {
+                try await screen.switchTarget(to: filter, paused: paused)
+            } catch {
+                self?.errorMessage = L("Couldn't switch the screen recording: %@", error.localizedDescription)
+            }
+        }
+        if let label {
+            manualNotes.append(ManualNote(at: elapsed, text: L("Screen recording switched to %@", label)))
+        }
+    }
+
+    /// Screen steps (pause, resume, switch) are async; chaining them keeps them in order.
     private func enqueueScreenStep(_ step: @escaping @MainActor (ScreenCapture) async -> Void) {
         guard let screen else { return }
         let previous = screenWork

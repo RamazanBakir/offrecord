@@ -20,12 +20,17 @@ struct ScreenPart: Codable, Equatable, Sendable {
 
 /// Records a display or a single window, video only. Every start/resume opens a new
 /// part file and every pause/stop closes it, so nothing is captured while paused.
+/// Switching to another display or window also starts a new part; all parts share
+/// the first part's frame size (other content is fitted inside it) so they join
+/// into one video without re-encoding.
 /// The parts are listed in screen-parts.json as they start (crash safety) and turned
 /// into screen.mov with the session audio by `ScreenRecordingAssembler`.
 ///
-/// Call `start`, `pause`, `resume` and `stop` one at a time (not concurrently).
+/// Call `start`, `pause`, `resume`, `switchTarget` and `stop` one at a time (not concurrently).
 final class ScreenCapture: NSObject, SCStreamOutput, SCStreamDelegate, SCRecordingOutputDelegate, @unchecked Sendable {
-    private let filter: SCContentFilter
+    private var filter: SCContentFilter
+    /// Pixel size of every part, fixed by the first one.
+    private var frameSize: (width: Int, height: Int)?
     private let folder: URL
     private let sessionStart: Date
     private let queue = DispatchQueue(label: "offrecord.screen")
@@ -41,7 +46,8 @@ final class ScreenCapture: NSObject, SCStreamOutput, SCStreamDelegate, SCRecordi
     private var targetLost = false
 
     /// Called when capture ends on its own: window closed, display disconnected,
-    /// sharing stopped from the menu bar. Later resumes are ignored.
+    /// sharing stopped from the menu bar. Later resumes are ignored until
+    /// `switchTarget` picks something else.
     var onError: (@Sendable (Error) -> Void)?
 
     init(filter: SCContentFilter, folder: URL, sessionStart: Date) {
@@ -93,19 +99,40 @@ final class ScreenCapture: NSObject, SCStreamOutput, SCStreamDelegate, SCRecordi
         await closePart()
     }
 
+    /// Records `newFilter` from now on. While paused it takes effect on resume.
+    func switchTarget(to newFilter: SCContentFilter, paused: Bool) async throws {
+        await closePart()
+        filter = newFilter
+        lock.withLock { targetLost = false }
+        if !paused { try await start() }
+    }
+
     private func makeStreamConfiguration() -> SCStreamConfiguration {
         let config = SCStreamConfiguration()
         let scale = CGFloat(filter.pointPixelScale)
+        let content = CGSize(width: filter.contentRect.width * scale, height: filter.contentRect.height * scale)
         // Even pixel sizes keep the HEVC/H.264 encoder happy.
-        config.width = max(2, Int(filter.contentRect.width * scale) / 2 * 2)
-        config.height = max(2, Int(filter.contentRect.height * scale) / 2 * 2)
+        let size = frameSize ?? (max(2, Int(content.width) / 2 * 2), max(2, Int(content.height) / 2 * 2))
+        frameSize = size
+        config.width = size.width
+        config.height = size.height
+        config.destinationRect = Self.centeredFit(content, in: CGSize(width: size.width, height: size.height))
         config.minimumFrameInterval = CMTime(value: 1, timescale: 30)
         config.showsCursor = true
         config.queueDepth = 6
-        // A window that is resized mid-recording stays whole inside the frame.
+        // A resized window, or content of another size after a switch, stays whole inside the frame.
         config.scalesToFit = true
         config.preservesAspectRatio = true
         return config
+    }
+
+    /// Where content of another shape goes inside the frame: as large as fits, centered.
+    static func centeredFit(_ content: CGSize, in frame: CGSize) -> CGRect {
+        guard content.width > 0, content.height > 0 else { return CGRect(origin: .zero, size: frame) }
+        let scale = min(frame.width / content.width, frame.height / content.height)
+        let fitted = CGSize(width: (content.width * scale).rounded(), height: (content.height * scale).rounded())
+        return CGRect(x: ((frame.width - fitted.width) / 2).rounded(), y: ((frame.height - fitted.height) / 2).rounded(),
+                      width: fitted.width, height: fitted.height)
     }
 
     /// Stops the stream and waits (at most 8 s) until the part file is finalized.

@@ -22,6 +22,8 @@ struct OffrecordApp: App {
                 Button(model.recorder.isPaused ? L("Resume") : L("Pause")) { model.recorder.togglePause() }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
                     .disabled(!model.recorder.isRecording)
+                Button(L("Change screen…")) { model.changeScreen() }
+                    .disabled(!model.recorder.canChangeScreen || model.isChoosingScreen)
                 Button(L("Mark important moment")) { model.recorder.addBookmark() }
                     .keyboardShortcut("b")
                     .disabled(!model.recorder.isRecording)

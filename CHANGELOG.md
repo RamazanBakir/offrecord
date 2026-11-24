@@ -17,6 +17,9 @@ All notable changes to Offrecord are documented here. The format follows
 - Choose what to record on screen: macOS's own picker opens when a screen recording
   starts, so you can pick any display (multi-monitor setups) or a single window.
   Offrecord can reuse the last choice, and its own windows stay out of the video.
+- **Change screen** while recording: pick another display or window and the video
+  continues with it in the same frame (works while paused, and after a recorded
+  window was closed). The audio is not interrupted.
 
 - Automatic language detection (new default): the first sentences are transcribed in
   your system language and in English and the clearly better one is kept, separately
