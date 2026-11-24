@@ -157,9 +157,11 @@ for what changed in each release.
 
 On the first recording macOS asks for **Microphone**, **Speech Recognition** and
 **Screen & System Audio Recording** (needed to capture the other side of a call).
-Calendar access is optional. If recording fails right after an update with a
-permission error, macOS kept a stale grant: run
-`./scripts/uninstall.sh && ./scripts/install.sh` and allow the permissions again.
+Calendar access is optional. macOS ties these grants to the app's signature; when the
+signature changes, `install.sh` clears the old grants so macOS asks again. If recording
+still fails with a permission error although System Settings shows it allowed, macOS kept
+a stale grant: run `./scripts/uninstall.sh && ./scripts/install.sh` and allow the
+permissions again.
 
 ## Usage
 

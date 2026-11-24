@@ -34,6 +34,9 @@ All notable changes to Offrecord are documented here. The format follows
 - The screen recording no longer echoes the other side of the call: its audio is now
   the same echo-cancelled, level-balanced mix as `audio.m4a` instead of the raw microphone.
 - Pausing now pauses the screen video too (it used to keep recording the screen).
+- Recording silently failed after reinstalling with a new signing identity: System
+  Settings still showed the permissions allowed, but macOS no longer applied them.
+  `install.sh` now clears the old grants when the app's signature changes.
 - System audio is recorded separately from the video, so recording a single window
   never cuts the other side of the call.
 - If the recorded window closes or the display is disconnected, the audio keeps

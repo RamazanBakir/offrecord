@@ -25,8 +25,21 @@ codesign --force --deep --sign "${IDENTITY:--}" "$APP"
 echo "Built $APP (signed with: ${IDENTITY:-ad-hoc})"
 
 if [[ "${1:-}" == "--install" ]]; then
+  INSTALLED="$HOME/Applications/Offrecord.app"
+  requirement() { codesign -d -r- "$1" 2>/dev/null | sed -n 's/^designated => //p'; }
+  previous=$([[ -d "$INSTALLED" ]] && requirement "$INSTALLED" || true)
+
   mkdir -p "$HOME/Applications"
-  rm -rf "$HOME/Applications/Offrecord.app"
-  cp -R "$APP" "$HOME/Applications/Offrecord.app"
+  rm -rf "$INSTALLED"
+  cp -R "$APP" "$INSTALLED"
   echo "Installed to ~/Applications/Offrecord.app"
+
+  # macOS ties permissions to the signature. When it changes (new signing identity,
+  # or ad-hoc builds) the old grants still look enabled in System Settings but no
+  # longer apply, and capture fails silently. Clear them so macOS asks again.
+  if [[ -n "$previous" && "$previous" != "$(requirement "$INSTALLED")" ]]; then
+    bundle_id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$INSTALLED/Contents/Info.plist")
+    tccutil reset All "$bundle_id" >/dev/null 2>&1 || true
+    echo "Signature changed: permissions reset, macOS will ask for them again"
+  fi
 fi
