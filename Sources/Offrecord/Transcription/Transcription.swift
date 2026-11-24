@@ -216,6 +216,7 @@ final class LiveTranscriber: LiveTranscribing, @unchecked Sendable {
     private let input: AsyncStream<AnalyzerInput>.Continuation
     private let inputStream: AsyncStream<AnalyzerInput>
     private var resultsTask: Task<Void, Never>?
+    private let activity = VoiceActivity()
 
     /// The language the model transcribes.
     let locale: Locale
@@ -246,9 +247,16 @@ final class LiveTranscriber: LiveTranscribing, @unchecked Sendable {
         }
         let transcriber = LiveTranscriber(speaker: speaker, module: module, format: format, locale: module.locale ?? locale)
         let results = module.results()
-        transcriber.resultsTask = Task.detached {
+        transcriber.resultsTask = Task.detached { [activity = transcriber.activity] in
             do {
-                for try await chunk in results { onChunk(speaker, chunk) }
+                for try await chunk in results {
+                    if activity.containsSound(in: chunk.range) {
+                        onChunk(speaker, chunk)
+                    } else if chunk.isFinal {
+                        // Made up from silence: an empty final still clears the live text.
+                        onChunk(speaker, TranscriptionChunk(text: "", range: chunk.range, isFinal: true, locale: chunk.locale))
+                    }
+                }
             } catch {
                 // Analyzer was cancelled or failed; recording continues without live text.
             }
@@ -258,6 +266,7 @@ final class LiveTranscriber: LiveTranscribing, @unchecked Sendable {
     }
 
     func feed(_ buffer: AVAudioPCMBuffer) {
+        activity.add(buffer)
         guard let converted = converter.convert(buffer) else { return }
         input.yield(AnalyzerInput(buffer: converted))
     }
@@ -315,10 +324,11 @@ enum FileTranscriber {
         try await module.ensureAssets()
 
         progress?(L("Transcribing…"))
+        let activity = try VoiceActivity.scan(audioURL)
         let file = try AVAudioFile(forReading: audioURL)
         let collector = Task {
             var segments: [TranscriptSegment] = []
-            for try await chunk in module.results() where chunk.isFinal {
+            for try await chunk in module.results() where chunk.isFinal && activity.containsSound(in: chunk.range) {
                 segments += SentenceBuilder.segments(from: chunk, speaker: speaker, locale: locale)
             }
             return segments

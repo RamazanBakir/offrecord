@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 /// `--transcript-test`: checks echo removal, speaker attribution, the language
@@ -48,6 +49,26 @@ enum TranscriptCleanupTest {
         check(assigned == [.others, .me, .others, .others], "speakers from overlap, echo goes to the other side (\(assigned))")
         let inPerson = SpeakerAttribution.assign(fresh, from: [line(.room, 0, 40, "x")]).map(\.speaker)
         check(inPerson.allSatisfy { $0 == .room }, "room recordings keep one speaker")
+
+        print("== Voice activity")
+        let activity = VoiceActivity()
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1)!
+        // 2 s of silence, 1 s of speech-level tone, 2 s of faint hiss (-70 dBFS).
+        for (seconds, amplitude) in [(2.0, Float(0)), (1.0, 0.1), (2.0, 0.000_3)] {
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(seconds * 48_000))!
+            buffer.frameLength = buffer.frameCapacity
+            for i in 0..<Int(buffer.frameLength) { buffer.floatChannelData![0][i] = amplitude * sin(Float(i) * 0.06) }
+            activity.add(buffer)
+        }
+        func range(_ start: Double, _ end: Double) -> CMTimeRange {
+            CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600), end: CMTime(seconds: end, preferredTimescale: 600))
+        }
+        check(!activity.containsSound(in: range(0, 1.9)), "silence has no sound")
+        check(!activity.containsSound(in: range(3.2, 4.9)), "faint hiss has no sound")
+        check(activity.containsSound(in: range(2.1, 2.9)), "speech level has sound")
+        check(activity.containsSound(in: range(0.5, 2.4)), "a result reaching into speech keeps it")
+        check(activity.containsSound(in: range(4.5, 9)), "audio not seen yet counts as sound")
+        check(activity.containsSound(in: .invalid), "unknown range kept")
 
         print("== Language decision")
         func score(_ confidence: Double, _ characters: Int) -> LanguageScore {
